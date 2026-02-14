@@ -1,0 +1,297 @@
+{
+    "project": "Ledger Brain — Financial Well-Being Manager (Web Demo)",
+    "philosophy": "Each task ships a working increment. No task depends on an unfinished task. You can demo after every checkmark. Target platform: Web (React Native Web).",
+    "tasks": [
+        {
+            "id": "T1",
+            "name": "Insight Engine — Pure Math (No LLM)",
+            "status": "pending",
+            "ship_artifact": "POST /insights/generate returns raw JSON",
+            "description": "Build insights_engine.py with 5 pure-Python functions. No LLM calls. Just SQL + math. This is the brain's analytical core.",
+            "subtasks": [
+                {
+                    "id": "T1.1",
+                    "name": "compute_financial_dna()",
+                    "description": "Shannon entropy of spending categories, top merchants, spend velocity ($/day), category concentration ratio.",
+                    "output": "{ entropy: 2.3, velocity: 87, top_merchants: [...], concentration: 0.6 }",
+                    "status": "pending"
+                },
+                {
+                    "id": "T1.2",
+                    "name": "detect_anomalies()",
+                    "description": "Z-score per merchant. Flag transactions > 2σ above mean. Also detect ABSENCE anomalies (merchant gap > 2x normal interval).",
+                    "output": "{ spikes: [...], absences: [...] }",
+                    "status": "pending"
+                },
+                {
+                    "id": "T1.3",
+                    "name": "detect_subscriptions()",
+                    "description": "Find recurring charges: same merchant, ±1% amount, ~28-31 day intervals. Compute annual + 5-year projection.",
+                    "output": "{ subscriptions: [{ merchant, amount, interval_days, annual_cost, five_year_cost }] }",
+                    "status": "pending"
+                },
+                {
+                    "id": "T1.4",
+                    "name": "forecast_cashflow(days=30)",
+                    "description": "Predict inflows/outflows for next 30 days using recurring patterns + moving average. Flag projected zero-balance dates.",
+                    "output": "{ daily_forecast: [...], danger_dates: [...], surplus_windows: [...] }",
+                    "status": "pending"
+                },
+                {
+                    "id": "T1.5",
+                    "name": "compute_spending_velocity()",
+                    "description": "Current $/day pace vs historical average. Return zone: green (<20% over), yellow (20-50% over), red (>50% over).",
+                    "output": "{ current_pace: 87, average_pace: 65, zone: 'yellow' }",
+                    "status": "pending"
+                },
+                {
+                    "id": "T1.6",
+                    "name": "Wire API endpoints",
+                    "description": "Add POST /insights/generate (runs all 5 functions, stores in AgentInsight), GET /insights, GET /spending-velocity to main.py.",
+                    "status": "pending"
+                }
+            ],
+            "test": "curl -X POST localhost:8001/insights/generate → returns structured JSON with all 5 insight types"
+        },
+        {
+            "id": "T2",
+            "name": "LLM Narrator — Gemini Turns Math Into Cards",
+            "status": "pending",
+            "ship_artifact": "POST /insights/generate returns generative UI card schemas",
+            "description": "Build llm_narrator.py. Takes raw insight JSON from T1, sends to Gemini, gets back generative UI card schemas with titles, bodies, severity, actions.",
+            "subtasks": [
+                {
+                    "id": "T2.1",
+                    "name": "Card schema definitions",
+                    "description": "Pydantic models for InsightCard, NudgeCard, ChartCard, ActionButton. Each card has card_type, icon, title, body, severity, actions[], visual{}.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T2.2",
+                    "name": "Gemini integration (Vertex AI)",
+                    "description": "Connect to Gemini via google-cloud-aiplatform SDK. Single function: narrate_insights(raw_data) → list[CardSchema].",
+                    "status": "pending"
+                },
+                {
+                    "id": "T2.3",
+                    "name": "Roast Mode prompt",
+                    "description": "Craft the system prompt that makes Gemini generate savage, data-backed commentary. Feed all T1 outputs as context.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T2.4",
+                    "name": "DO / DON'T generator",
+                    "description": "Prompt Gemini to output prescriptive advice as structured { do: [...], dont: [...] } arrays.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T2.5",
+                    "name": "Hook into /insights/generate",
+                    "description": "After T1's raw analysis, pass results through narrator. Store card JSON in AgentInsight.card_schema column.",
+                    "status": "pending"
+                }
+            ],
+            "test": "curl localhost:8001/insights → returns card JSON with card_type, severity, actions, and LLM-generated content"
+        },
+        {
+            "id": "T3",
+            "name": "Pi Agent Core — Chat with Ledger",
+            "status": "pending",
+            "ship_artifact": "POST localhost:8002/chat accepts natural language, returns narrated answers",
+            "description": "Set up Pi Agent Core as a Node.js service. Connects to Gemini. Tools bridge to FastAPI. Handles multi-turn chat.",
+            "subtasks": [
+                {
+                    "id": "T3.1",
+                    "name": "Scaffold agent-node/",
+                    "description": "npm init, install @mariozechner/pi-agent-core, @mariozechner/pi-ai, @sinclair/typebox. Create index.ts, tools.ts, server.ts.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T3.2",
+                    "name": "Configure Gemini provider",
+                    "description": "Set up google provider with gemini-2.5-flash. Use GEMINI_API_KEY or Vertex AI ADC credentials.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T3.3",
+                    "name": "Define tools (bridge to FastAPI)",
+                    "description": "query_transactions: calls GET localhost:8001/transactions. get_insights: calls GET localhost:8001/insights. check_velocity: calls GET localhost:8001/spending-velocity.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T3.4",
+                    "name": "System prompt (Ledger persona)",
+                    "description": "Port SOUL.md into Pi Agent systemPrompt. Financial forensic analyst, concise, action-oriented, privacy-first.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T3.5",
+                    "name": "HTTP server wrapper",
+                    "description": "Express server on port 8002. POST /chat accepts { message: string }, streams Pi Agent events back as SSE or JSON.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T3.6",
+                    "name": "Proactive context injection",
+                    "description": "After answering the user's question, append 'also check if there are adjacent insights the user should know about' to the prompt.",
+                    "status": "pending"
+                }
+            ],
+            "test": "curl -X POST localhost:8002/chat -d '{\"message\":\"How much on Uber?\"}' → agent calls FastAPI tool → returns narrated answer with proactive context"
+        },
+        {
+            "id": "T4",
+            "name": "Frontend — Generative UI Card Renderer",
+            "status": "pending",
+            "ship_artifact": "Web app renders dynamic insight cards from JSON",
+            "description": "Build CardRenderer.tsx — the component that takes any card JSON schema and renders the right React Native Web UI (divs/spans under the hood).",
+            "subtasks": [
+                {
+                    "id": "T4.1",
+                    "name": "CardRenderer component (Web optimized)",
+                    "description": "Ensure flexbox layouts work on desktop/web. Card types: nudge_warning, insight_positive, roast, do_dont, chart_sparkline.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T4.2",
+                    "name": "Action button handler",
+                    "description": "Map action types to navigation or API calls. Ensure click handlers work on web.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T4.3",
+                    "name": "Visual sub-components",
+                    "description": "ProgressBar, MiniBarChart (use Victory or generic SVG for web compat), SeverityBadge.",
+                    "status": "pending"
+                }
+            ],
+            "test": "Open http://localhost:8081/insights → verify cards render correctly on Chrome"
+        },
+        {
+            "id": "T5",
+            "name": "Frontend — Insights Feed Screen",
+            "status": "pending",
+            "ship_artifact": "Insights tab shows live agent-generated cards on Web",
+            "description": "Build the Insights screen that fetches from GET /insights and renders a scrollable feed. Optimize layout for desktop/web width.",
+            "subtasks": [
+                {
+                    "id": "T5.1",
+                    "name": "InsightsScreen component",
+                    "description": "ScrollView (web-compatible). Pull-to-refresh (or simple button on web). Loading skeleton.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T5.2",
+                    "name": "Spending Velocity header",
+                    "description": "SpendingGauge component. Ensure smooth animation on web.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T5.3",
+                    "name": "Tab navigation (Web)",
+                    "description": "Ensure bottom tabs (or sidebar on desktop) work for navigation: Transactions | Insights | Chat.",
+                    "status": "pending"
+                }
+            ],
+            "test": "Navigate to Insights tab on localhost:8081 → see live cards"
+        },
+        {
+            "id": "T6",
+            "name": "Frontend — Chat with Ledger Screen",
+            "status": "pending",
+            "ship_artifact": "Web Chat tab lets you talk to the agent",
+            "description": "Build the Chat screen connected to Pi Agent. Ensure keyboard events (Enter to send) work on web.",
+            "subtasks": [
+                {
+                    "id": "T6.1",
+                    "name": "ChatScreen component (Web)",
+                    "description": "Chat bubble list. TextInput with 'onKeyPress' for Enter-to-submit. Auto-scroll to bottom behavior for web.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T6.2",
+                    "name": "Inline card rendering",
+                    "description": "Render CardRenderer inside web chat bubbles. Test CSS containment.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T6.3",
+                    "name": "Loading states",
+                    "description": "Typing indicator. Web-friendly animations.",
+                    "status": "pending"
+                }
+            ],
+            "test": "Open Web Chat → type query → hit Enter → see response"
+        },
+        {
+            "id": "T7",
+            "name": "Auto-Trigger — Insights on Every Sync",
+            "status": "pending",
+            "ship_artifact": "Connecting bank on web auto-generates insights",
+            "description": "Hook insight generation into Plaid sync. Frontend refreshes after sync.",
+            "subtasks": [
+                {
+                    "id": "T7.1",
+                    "name": "Post-sync trigger",
+                    "description": "Backend hook in exchange_public_token.",
+                    "status": "pending"
+                },
+                {
+                    "id": "T7.2",
+                    "name": "Frontend polling / refresh",
+                    "description": "After Plaid Link success on web, redirection logic updates the valid-data state.",
+                    "status": "pending"
+                }
+            ],
+            "test": "Connect bank in Plaid web modal → insights dashboard updates"
+        }
+    ],
+    "dependency_graph": {
+        "T1": [],
+        "T2": [
+            "T1"
+        ],
+        "T3": [
+            "T1"
+        ],
+        "T4": [],
+        "T5": [
+            "T2",
+            "T4"
+        ],
+        "T6": [
+            "T3",
+            "T4"
+        ],
+        "T7": [
+            "T2",
+            "T5"
+        ]
+    },
+    "parallel_tracks": {
+        "track_a": [
+            "T1",
+            "T2",
+            "T5",
+            "T7"
+        ],
+        "track_b": [
+            "T4"
+        ],
+        "track_c": [
+            "T3",
+            "T6"
+        ],
+        "note": "Web compatibility is handled by React Native Web (Expo). No platform-specific code needed, just mindful CSS/layout choices."
+    },
+    "estimated_hours": {
+        "T1": 2,
+        "T2": 1.5,
+        "T3": 2,
+        "T4": 1.5,
+        "T5": 1,
+        "T6": 1,
+        "T7": 0.5,
+        "total": 9.5
+    }
+}

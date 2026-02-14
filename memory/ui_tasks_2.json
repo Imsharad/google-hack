@@ -1,0 +1,658 @@
+{
+  "project": "Chat UI 100x Redesign — Web Target",
+  "version": "3.0",
+  "working_directory": "/Users/sharad/Projects/labs/google-hack/my-fintech-app",
+  "demo_target": "Web browser via `npx expo start --web`",
+  "design_north_star": "Agent responses are editorial content, not chat bubbles. Think Claude.ai meets Notion inside a fintech app. On web we have real CSS — use it.",
+
+  "platform_context": {
+    "runtime": "Expo Web — React Native components compile to DOM via react-native-web",
+    "implication": "We CAN use web-only React libraries (react-markdown, etc.) directly. They render real DOM elements (<h1>, <p>, <ul>) with real CSS. No need to fight RN StyleSheet for typography.",
+    "strategy": "Use react-native Views/FlatList for layout and structure. Use react-markdown for content rendering inside agent messages. Use CSS keyframe animations (via StyleSheet or inline) — more reliable on web than reanimated.",
+    "font_stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif (system default on web via RN-web, looks great)"
+  },
+
+  "constraints": [
+    "Expo Web — still uses react-native imports for layout (View, FlatList, etc.) but renders to DOM",
+    "Design tokens from constants/tokens.ts remain the source of truth for colors/spacing",
+    "WebSocket protocol and message shape must NOT change",
+    "Web-only libraries are fine since demo target is web",
+    "react-native-reanimated IS installed but CSS animations are more reliable on web — prefer CSS @keyframes for simple animations, use reanimated only if CSS approach fails"
+  ],
+
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Install web markdown dependencies",
+      "status": "pending",
+      "dependencies": [],
+      "description": "Install react-markdown (renders markdown to React DOM elements) and remark-gfm (adds GitHub Flavored Markdown: tables, strikethrough, task lists).",
+      "implementation": {
+        "commands": [
+          "cd /Users/sharad/Projects/labs/google-hack/my-fintech-app && npm install react-markdown remark-gfm"
+        ],
+        "packages": {
+          "react-markdown": "Renders markdown string → React DOM elements (<h1>, <p>, <code>, etc). Accepts custom component overrides for full visual control.",
+          "remark-gfm": "Plugin for react-markdown that enables GitHub Flavored Markdown — tables, strikethrough (~~text~~), task lists, autolinks."
+        },
+        "notes": "Do NOT install react-native-markdown-display — that's for native only and will break on web. react-markdown is the gold standard for web React."
+      },
+      "acceptance_criteria": [
+        "react-markdown and remark-gfm appear in package.json dependencies",
+        "App compiles and opens in browser without errors (npx expo start --web)"
+      ]
+    },
+
+    {
+      "id": "T2",
+      "title": "Create MarkdownRenderer component (web-optimized)",
+      "status": "pending",
+      "dependencies": ["T1"],
+      "description": "A component that takes a markdown string and renders it as beautifully styled HTML using react-markdown. This is the CORE of the entire redesign. Uses real CSS for pixel-perfect typography control.",
+      "file_to_create": "components/chat/MarkdownRenderer.tsx",
+      "implementation": {
+        "component_signature": "export function MarkdownRenderer({ content, isUser }: { content: string; isUser?: boolean })",
+        "key_imports": [
+          "import ReactMarkdown from 'react-markdown'",
+          "import remarkGfm from 'remark-gfm'",
+          "import { tokens } from '../../constants/tokens'"
+        ],
+        "render_structure": "<div style={containerStyle} className={isUser ? 'md-user' : 'md-agent'}><ReactMarkdown remarkPlugins={[remarkGfm]} components={customComponents}>{content}</ReactMarkdown></div>",
+
+        "approach": "Use react-markdown's `components` prop to override each HTML element with a styled version. Each override is a simple function component that applies inline styles derived from tokens. This avoids needing a separate CSS file while keeping full control.",
+
+        "component_overrides": {
+          "_note": "Each key is an HTML element that react-markdown renders. The override wraps it with inline styles. All colors reference tokens. When isUser=true, text colors become white.",
+
+          "h1": {
+            "element": "<h1 style={...}>",
+            "styles": {
+              "fontSize": 22,
+              "fontWeight": 700,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary",
+              "marginTop": 20,
+              "marginBottom": 8,
+              "letterSpacing": "-0.5px",
+              "lineHeight": 1.3
+            }
+          },
+          "h2": {
+            "element": "<h2 style={...}>",
+            "styles": {
+              "fontSize": 18,
+              "fontWeight": 700,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary",
+              "marginTop": 16,
+              "marginBottom": 6,
+              "letterSpacing": "-0.3px",
+              "lineHeight": 1.3
+            }
+          },
+          "h3": {
+            "element": "<h3 style={...}>",
+            "styles": {
+              "fontSize": 16,
+              "fontWeight": 600,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary",
+              "marginTop": 12,
+              "marginBottom": 4,
+              "lineHeight": 1.4
+            }
+          },
+          "p": {
+            "element": "<p style={...}>",
+            "styles": {
+              "fontSize": 15,
+              "lineHeight": 1.65,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary",
+              "marginTop": 0,
+              "marginBottom": 10,
+              "fontWeight": 400
+            }
+          },
+          "strong": {
+            "element": "<strong style={...}>",
+            "styles": {
+              "fontWeight": 600,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary"
+            }
+          },
+          "em": {
+            "element": "<em style={...}>",
+            "styles": {
+              "fontStyle": "italic"
+            }
+          },
+          "ul": {
+            "element": "<ul style={...}>",
+            "styles": {
+              "marginTop": 4,
+              "marginBottom": 10,
+              "paddingLeft": 0,
+              "listStyleType": "none"
+            },
+            "_note": "Remove default browser bullets — we render custom ones via li"
+          },
+          "ol": {
+            "element": "<ol style={...}>",
+            "styles": {
+              "marginTop": 4,
+              "marginBottom": 10,
+              "paddingLeft": 20
+            }
+          },
+          "li": {
+            "element": "<li style={...}>",
+            "render_pattern": "For unordered lists: render a coral dot (●) as a ::before-like span, then the content. For ordered lists: use default numbering.",
+            "styles": {
+              "fontSize": 15,
+              "lineHeight": 1.65,
+              "color": "isUser ? tokens.colors.text.inverse : tokens.colors.text.primary",
+              "marginBottom": 4,
+              "display": "flex",
+              "alignItems": "flex-start",
+              "gap": 10
+            },
+            "custom_bullet": {
+              "element": "<span> rendered before li children for ul lists",
+              "content": "•",
+              "color": "tokens.colors.brand.accent (#FF6B6B)",
+              "fontSize": 18,
+              "lineHeight": "1.45",
+              "flexShrink": 0,
+              "_note": "Detect parent list type: if inside <ul>, prepend bullet span. If inside <ol>, let browser handle numbering. Pass ordered prop through context or check node.parentNode.tagName."
+            }
+          },
+          "blockquote": {
+            "element": "<blockquote style={...}>",
+            "styles": {
+              "borderLeft": "3px solid #FF6B6B",
+              "backgroundColor": "rgba(255, 107, 107, 0.05)",
+              "paddingLeft": 14,
+              "paddingRight": 14,
+              "paddingTop": 10,
+              "paddingBottom": 10,
+              "marginLeft": 0,
+              "marginRight": 0,
+              "marginTop": 10,
+              "marginBottom": 10,
+              "borderRadius": 6
+            },
+            "_note": "This is the 'pro tip' / 'insight' box. Coral left border + very subtle coral tint."
+          },
+          "code_inline": {
+            "_note": "react-markdown renders inline code as <code> WITHOUT a <pre> wrapper. Detect this: if code element has no <pre> parent, it's inline.",
+            "element": "<code style={...}>",
+            "styles": {
+              "fontFamily": "'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace",
+              "backgroundColor": "tokens.colors.background.input (#F3F4F6)",
+              "color": "tokens.colors.brand.muted (#4A4A6A)",
+              "padding": "2px 6px",
+              "borderRadius": 4,
+              "fontSize": "0.9em"
+            }
+          },
+          "code_block": {
+            "_note": "react-markdown renders code blocks as <pre><code>. Override the <pre> element for block styling.",
+            "element": "<pre style={...}>",
+            "styles": {
+              "fontFamily": "'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace",
+              "backgroundColor": "tokens.colors.neutrals[900] (#1A1A2E)",
+              "color": "tokens.colors.neutrals[100] (#F3F4F6)",
+              "padding": 16,
+              "borderRadius": 10,
+              "marginTop": 10,
+              "marginBottom": 10,
+              "fontSize": 13,
+              "lineHeight": 1.55,
+              "overflowX": "auto",
+              "whiteSpace": "pre-wrap",
+              "wordBreak": "break-word"
+            }
+          },
+          "hr": {
+            "element": "<hr style={...}>",
+            "styles": {
+              "border": "none",
+              "height": 1,
+              "backgroundColor": "tokens.colors.neutrals[200] (#E5E7EB)",
+              "marginTop": 16,
+              "marginBottom": 16
+            }
+          },
+          "a": {
+            "element": "<a style={...} target='_blank' rel='noopener'>",
+            "styles": {
+              "color": "tokens.colors.brand.accent (#FF6B6B)",
+              "textDecoration": "underline",
+              "textUnderlineOffset": "2px"
+            }
+          },
+          "table": {
+            "element": "<div style={{ overflowX: 'auto' }}><table style={...}>",
+            "styles": {
+              "width": "100%",
+              "borderCollapse": "collapse",
+              "marginTop": 10,
+              "marginBottom": 10,
+              "fontSize": 14
+            }
+          },
+          "th": {
+            "element": "<th style={...}>",
+            "styles": {
+              "textAlign": "left",
+              "padding": "8px 12px",
+              "fontWeight": 600,
+              "fontSize": 13,
+              "color": "tokens.colors.text.secondary",
+              "backgroundColor": "tokens.colors.neutrals[50] (#F9FAFB)",
+              "borderBottom": "2px solid tokens.colors.neutrals[200]"
+            }
+          },
+          "td": {
+            "element": "<td style={...}>",
+            "styles": {
+              "padding": "8px 12px",
+              "borderBottom": "1px solid tokens.colors.neutrals[200]",
+              "color": "tokens.colors.text.primary",
+              "fontSize": 14
+            }
+          }
+        },
+
+        "react_markdown_code_component_pattern": {
+          "_note": "react-markdown passes code elements through a single `code` component override. Distinguish inline vs block by checking if the parent is <pre>. Here's the exact pattern:",
+          "code": "components={{ code({ node, inline, className, children, ...props }) { return inline ? <code style={inlineCodeStyles}>{children}</code> : <code style={blockCodeInnerStyles} {...props}>{children}</code>; }, pre({ children }) { return <pre style={preStyles}>{children}</pre>; } }}"
+        },
+
+        "user_mode_behavior": "When isUser=true: all text colors (p, h1-h3, strong, li, etc.) switch to tokens.colors.text.inverse (#FFFFFF). Code blocks and blockquotes keep their own backgrounds. Bullet color stays coral (visible against navy). Create the styles object dynamically based on isUser prop — either compute at render or use a factory function: const getStyles = (isUser: boolean) => ({ ... })."
+      },
+      "acceptance_criteria": [
+        "Renders **bold**, *italic*, ## headers, - lists, > blockquotes, `inline code`, ```code blocks```, --- hr, [links](url), ~~strikethrough~~, and | tables |",
+        "Headers have clear visual hierarchy (size + weight + generous spacing)",
+        "Blockquotes have coral left border + subtle tinted background — feels like a 'callout' box",
+        "Unordered list bullets are coral accent colored (●), not default browser dots",
+        "Code blocks have dark navy (#1A1A2E) background with light text, rounded corners",
+        "Inline code has light gray background with muted text, subtle rounding",
+        "Tables are clean with left-aligned text, subtle borders, header background",
+        "isUser=true flips all text to white",
+        "All colors derive from tokens.ts",
+        "No raw HTML rendered — react-markdown handles everything safely"
+      ]
+    },
+
+    {
+      "id": "T3",
+      "title": "Create ThinkingIndicator with CSS animation",
+      "status": "pending",
+      "dependencies": [],
+      "description": "Animated thinking indicator with three pulsing dots and a tool activity subtitle. Uses CSS keyframe animation (more reliable on web than reanimated). Replaces the ugly ActivityIndicator + italic text.",
+      "file_to_create": "components/chat/ThinkingIndicator.tsx",
+      "implementation": {
+        "component_signature": "export function ThinkingIndicator({ thought }: { thought: string })",
+        "imports": [
+          "import React from 'react'",
+          "import { View, StyleSheet } from 'react-native'",
+          "import { Text } from '../ui/Text'",
+          "import { LedgerAvatar } from '../ui/LedgerAvatar'",
+          "import { tokens } from '../../constants/tokens'"
+        ],
+
+        "animation_approach": {
+          "technique": "CSS @keyframes injected via a <style> tag (or inline animation styles). On web, react-native-web's StyleSheet does NOT support @keyframes, so we inject a <style> element into the DOM on mount using useEffect.",
+          "keyframes_css": "@keyframes pulseDot { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }",
+          "injection_pattern": [
+            "useEffect(() => {",
+            "  const style = document.createElement('style');",
+            "  style.textContent = `@keyframes pulseDot { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }`;",
+            "  document.head.appendChild(style);",
+            "  return () => { document.head.removeChild(style); };",
+            "}, []);"
+          ]
+        },
+
+        "dots": {
+          "count": 3,
+          "render": "Three <div> elements (or <View> with web style overrides) each 7px x 7px circles",
+          "styles_per_dot": {
+            "width": 7,
+            "height": 7,
+            "borderRadius": "50%",
+            "backgroundColor": "tokens.colors.brand.muted (#4A4A6A)"
+          },
+          "animation_per_dot": {
+            "dot1": "animation: pulseDot 1.2s ease-in-out infinite",
+            "dot2": "animation: pulseDot 1.2s ease-in-out 0.2s infinite",
+            "dot3": "animation: pulseDot 1.2s ease-in-out 0.4s infinite",
+            "_note": "0.2s stagger between each dot creates the wave effect"
+          },
+          "container": {
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "center",
+            "gap": 5
+          }
+        },
+
+        "layout": {
+          "outer_container": {
+            "flexDirection": "row",
+            "alignItems": "flex-start",
+            "paddingHorizontal": 20,
+            "paddingVertical": 12,
+            "gap": 12
+          },
+          "content_column": {
+            "flexDirection": "column",
+            "gap": 4
+          },
+          "thought_text": {
+            "fontSize": 13,
+            "color": "tokens.colors.text.tertiary (#9CA3AF)",
+            "fontWeight": "400"
+          },
+          "avatar_size": 22
+        },
+
+        "web_style_application": "Since we're on web, apply the animation CSS via the style attribute on each dot div: style={{ ...dotBaseStyles, animation: 'pulseDot 1.2s ease-in-out Xs infinite' }} where X is the stagger delay. Use Platform.OS === 'web' guard if needed, but since we're web-only for demo, can skip."
+      },
+      "acceptance_criteria": [
+        "Three dots pulse in a wave pattern (left → right, staggered by 0.2s each)",
+        "Animation is smooth and infinite (CSS-driven, no JS frame drops)",
+        "Tool activity text (thought prop) displays below dots in tertiary color",
+        "LedgerAvatar at 22px shows to the left",
+        "Feels alive — the wave pattern should be mesmerizing, not jarring",
+        "No console errors about @keyframes or style injection"
+      ]
+    },
+
+    {
+      "id": "T4",
+      "title": "Create ChatMessage component with entrance animation",
+      "status": "pending",
+      "dependencies": ["T2"],
+      "description": "Renders a single chat message with asymmetric design: user = compact right-aligned bubble, agent = editorial left-aligned content with coral accent border. CSS transition entrance animation.",
+      "file_to_create": "components/chat/ChatMessage.tsx",
+      "implementation": {
+        "component_signature": "export function ChatMessage({ message, showAvatar }: { message: Message; showAvatar: boolean })",
+        "imports": [
+          "import React, { useEffect, useState } from 'react'",
+          "import { View, StyleSheet } from 'react-native'",
+          "import { Text } from '../ui/Text'",
+          "import { LedgerAvatar } from '../ui/LedgerAvatar'",
+          "import { MarkdownRenderer } from './MarkdownRenderer'",
+          "import { tokens } from '../../constants/tokens'",
+          "import { Message } from '../../types/chat'"
+        ],
+        "show_avatar_logic": "The parent (chat.tsx) computes showAvatar: true when item.sender === 'agent' AND (index === 0 OR messages[index-1].sender === 'user'). Prevents avatar+name on every agent message.",
+
+        "entrance_animation": {
+          "technique": "CSS transition. On mount, set state from 'entering' to 'entered'. Apply styles based on state.",
+          "pattern": [
+            "const [visible, setVisible] = useState(false);",
+            "useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);",
+            "",
+            "const entranceStyle = {",
+            "  opacity: visible ? 1 : 0,",
+            "  transform: visible ? 'translateY(0px)' : 'translateY(8px)',",
+            "  transition: 'opacity 200ms ease-out, transform 200ms ease-out',",
+            "};"
+          ],
+          "_note": "Apply entranceStyle to the outermost wrapper div/View. The 200ms fade+slide is barely perceptible but removes the dead 'pop' feeling."
+        },
+
+        "user_message_design": {
+          "outer_wrapper": {
+            "display": "flex",
+            "justifyContent": "flex-end",
+            "marginBottom": 6
+          },
+          "bubble": {
+            "backgroundColor": "tokens.colors.brand.primary (#1A1A2E)",
+            "borderRadius": 20,
+            "borderBottomRightRadius": 6,
+            "paddingHorizontal": 16,
+            "paddingVertical": 10,
+            "maxWidth": "75%"
+          },
+          "content": "MarkdownRenderer with content={message.text} isUser={true}"
+        },
+
+        "agent_message_design": {
+          "outer_wrapper": {
+            "display": "flex",
+            "justifyContent": "flex-start",
+            "marginBottom": 4
+          },
+          "avatar_row": {
+            "_rendered_only_when": "showAvatar === true",
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "center",
+            "gap": 8,
+            "marginBottom": 6,
+            "marginTop": 20,
+            "_note_on_marginTop": "20px top margin creates clear visual separation between user question and agent response — makes it feel like a new 'section'"
+          },
+          "avatar_size": 22,
+          "name_text": {
+            "fontSize": 13,
+            "fontWeight": "600",
+            "color": "tokens.colors.text.secondary (#4B5563)"
+          },
+          "content_area": {
+            "borderLeft": "2.5px solid #FF6B6B",
+            "paddingLeft": 16,
+            "paddingRight": 8,
+            "marginLeft": 11,
+            "_note_on_marginLeft": "11px ≈ half of 22px avatar, so the coral border aligns with the center of the avatar above",
+            "maxWidth": "90%"
+          },
+          "background": "NONE. Transparent. The coral left border IS the visual container. Content floats on the page background. This is the key design difference from the old bubble approach.",
+          "content": "MarkdownRenderer with content={message.text} isUser={false}"
+        }
+      },
+      "acceptance_criteria": [
+        "User messages: right-aligned navy bubble, white text, rounded with flat bottom-right corner, max 75% width",
+        "Agent messages: NO bubble/background. Left-aligned. 2.5px coral left border. Markdown renders beautifully inside.",
+        "Avatar + 'Ledger' name only when showAvatar=true",
+        "Coral left border visually aligns below the avatar",
+        "20px top margin on avatar row creates clear separation between Q&A turns",
+        "Each message fades + slides up on mount (200ms CSS transition)",
+        "Agent content maxes at 90% width. User at 75%."
+      ]
+    },
+
+    {
+      "id": "T5",
+      "title": "Rewrite chat.tsx to integrate new components",
+      "status": "pending",
+      "dependencies": ["T3", "T4", "T6"],
+      "description": "Rewrite the main chat screen to use ChatMessage and ThinkingIndicator. Update layout, remove old styles, upgrade header/input styling.",
+      "file_to_modify": "app/(tabs)/chat.tsx",
+      "implementation": {
+        "imports_to_add": [
+          "import { ChatMessage } from '../../components/chat/ChatMessage'",
+          "import { ThinkingIndicator } from '../../components/chat/ThinkingIndicator'",
+          "import { Message } from '../../types/chat'"
+        ],
+        "imports_to_remove": [
+          "ActivityIndicator (from react-native import)",
+          "Remove local Message interface definition (moved to types/chat.ts)"
+        ],
+
+        "changes": [
+          {
+            "what": "FlatList renderItem — the BIG change",
+            "old_lines": "142-157 (entire inline renderItem with bubbles, avatar on every msg, raw Text)",
+            "new_code": "renderItem={({ item, index }) => { const prevMsg = index > 0 ? messages[index - 1] : null; const showAvatar = item.sender === 'agent' && (!prevMsg || prevMsg.sender === 'user'); return <ChatMessage message={item} showAvatar={showAvatar} />; }}"
+          },
+          {
+            "what": "Thinking indicator",
+            "old_lines": "161-167 (loading block with ActivityIndicator + italic text)",
+            "new_code": "{loading && <ThinkingIndicator thought={thought} />}"
+          },
+          {
+            "what": "listContent style",
+            "old": "{ padding: 20, paddingBottom: 20 }",
+            "new": "{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }"
+          },
+          {
+            "what": "header style",
+            "old": "borderBottomWidth: 1, borderBottomColor: tokens.colors.neutrals[200]",
+            "new": "Remove border. Add: ...tokens.shadows.sm — makes header feel floating/elevated rather than divided by a line"
+          },
+          {
+            "what": "inputContainer style",
+            "old": "borderTopWidth: 1, borderTopColor: tokens.colors.neutrals[200]",
+            "new": "Remove border. Add boxShadow for web: boxShadow: '0 -2px 10px rgba(0,0,0,0.04)'. On web this is cleaner than RN shadow props."
+          }
+        ],
+
+        "styles_to_DELETE": [
+          "bubble",
+          "userBubble",
+          "agentBubble",
+          "userText",
+          "agentText",
+          "thinkingContainer",
+          "thinkingText"
+        ],
+
+        "styles_to_KEEP": [
+          "container",
+          "header (modified — shadow instead of border)",
+          "headerTitle",
+          "listContent (modified)",
+          "inputContainer (modified — shadow instead of border)",
+          "input",
+          "sendButton"
+        ],
+
+        "DO_NOT_TOUCH": [
+          "WebSocket logic (lines 27-91) — all of it",
+          "sendMessage function (lines 93-123) — all of it",
+          "State declarations (messages, input, loading, thought, refs)",
+          "KeyboardAvoidingView wrapping",
+          "FlatList scrollToEnd behavior",
+          "Send button and TextInput functionality"
+        ]
+      },
+      "acceptance_criteria": [
+        "Chat renders correctly with new ChatMessage and ThinkingIndicator",
+        "ALL old bubble styles and inline rendering code are removed",
+        "showAvatar logic correctly shows avatar only on first agent msg in a turn",
+        "Header floats with shadow, no border line",
+        "Input area floats with shadow, no border line",
+        "WebSocket still works: send message → loading → thinking indicator → response renders with markdown",
+        "Scroll to bottom still works on new messages",
+        "No TypeScript errors, no console warnings, app compiles on web"
+      ]
+    },
+
+    {
+      "id": "T6",
+      "title": "Extract shared Message interface to types/chat.ts",
+      "status": "pending",
+      "dependencies": [],
+      "description": "Move the Message interface to a shared types file so ChatMessage.tsx and chat.tsx can both import it without circular deps.",
+      "file_to_create": "types/chat.ts",
+      "implementation": {
+        "file_content": "export interface Message {\n  id: string;\n  text: string;\n  sender: 'user' | 'agent';\n  timestamp?: Date;\n}",
+        "then_update": [
+          "chat.tsx: Add `import { Message } from '../../types/chat'` and DELETE the local `interface Message { ... }` block (lines 12-17)",
+          "ChatMessage.tsx: import { Message } from '../../types/chat'"
+        ]
+      },
+      "acceptance_criteria": [
+        "Message interface defined once in types/chat.ts",
+        "chat.tsx imports from types/chat.ts (no local definition)",
+        "ChatMessage.tsx imports from types/chat.ts",
+        "No duplicate interface definitions anywhere"
+      ]
+    },
+
+    {
+      "id": "T7",
+      "title": "End-to-end verification on web",
+      "status": "pending",
+      "dependencies": ["T5"],
+      "description": "Launch the app in web browser and verify the complete redesigned chat works with real or simulated agent responses containing markdown.",
+      "implementation": {
+        "launch_command": "cd /Users/sharad/Projects/labs/google-hack/my-fintech-app && npx expo start --web",
+
+        "if_agent_not_running": "If the WebSocket agent at localhost:8002 is not available, temporarily hardcode a test agent response in chat.tsx for visual verification. Add a test message to the initial messages array with rich markdown content. Example test content below.",
+
+        "test_markdown_content": "## February Spending Overview\n\nYou've spent **$4,230** across 47 transactions this month.\n\n### Top Categories\n\n- **Dining Out**: $1,200 (+12% vs last month)\n- **Transportation**: $890\n- **Shopping**: $650 (-8% vs last month)\n- **Subscriptions**: $340\n\n> Your dining spend has been trending up for 3 consecutive months. Consider setting a $1,000 monthly cap to stay on track.\n\n---\n\n### Month-over-Month Comparison\n\n| Category | Jan | Feb | Change |\n|----------|-----|-----|--------|\n| Dining | $1,070 | $1,200 | +12% |\n| Transport | $920 | $890 | -3% |\n| Shopping | $710 | $650 | -8% |\n\nOverall, your total spend is **up 6%** from January. The main driver is dining — everything else is trending down. Nice work on cutting shopping costs!",
+
+        "visual_checklist": [
+          "## headers render as large bold text with spacing above — NOT as literal '## text'",
+          "**bold** renders as semibold weight — NOT as literal '**text**'",
+          "- list items render with coral (●) bullets and proper indentation",
+          "> blockquotes render with coral left border + subtle pink-tinted background",
+          "--- renders as a thin gray horizontal line",
+          "| tables | render with clean headers, borders, and aligned cells",
+          "Paragraphs have comfortable 1.65x line height and 10px bottom spacing",
+          "User messages are navy bubbles on the right with white text",
+          "Agent messages have NO bubble — just coral left border + editorial content",
+          "Avatar + 'Ledger' label appears only once per agent turn, not on every message",
+          "Thinking indicator shows three pulsing dots (wave animation) with tool activity text",
+          "Messages fade+slide in on arrival (subtle, 200ms)",
+          "Overall vibe: clean, editorial, premium — like reading a Notion doc in a chat"
+        ],
+
+        "known_gotchas": [
+          "react-markdown may warn about keys on list items — add key prop in li override if so",
+          "Expo web may need metro cache clear if styles look wrong: npx expo start --web --clear",
+          "If CSS animations don't apply (dots don't pulse), check that <style> injection ran — verify in browser DevTools",
+          "FlatList on web may have scroll performance issues — if so, try adding removeClippedSubviews={false}",
+          "react-native-web may add default margins/padding to some elements — reset them explicitly in component overrides"
+        ]
+      },
+      "acceptance_criteria": [
+        "App opens in browser without errors",
+        "All markdown elements render correctly — no raw syntax visible",
+        "Typography is beautiful: proper hierarchy, spacing, line height",
+        "Blockquotes look like premium callout boxes",
+        "Tables render clean and readable",
+        "Dots pulse smoothly in a wave pattern",
+        "Messages animate in subtly",
+        "User bubbles and agent content have clear visual asymmetry",
+        "The chat feels 10x more premium than before"
+      ]
+    }
+  ],
+
+  "execution_order": ["T1 + T6 (parallel)", "T2 + T3 (parallel)", "T4", "T5", "T7"],
+  "execution_order_rationale": "T1 (npm install) and T6 (types file) have zero deps — run in parallel. T2 (MarkdownRenderer) needs T1. T3 (ThinkingIndicator) needs nothing — parallel with T2. T4 (ChatMessage) needs T2. T5 (chat.tsx rewrite) needs T3+T4+T6. T7 (verification) needs T5.",
+
+  "files_created": [
+    "components/chat/MarkdownRenderer.tsx",
+    "components/chat/ThinkingIndicator.tsx",
+    "components/chat/ChatMessage.tsx",
+    "types/chat.ts"
+  ],
+  "files_modified": [
+    "app/(tabs)/chat.tsx",
+    "package.json (via npm install)"
+  ],
+
+  "design_tokens_reference": {
+    "_note": "These are the exact values from constants/tokens.ts. ALWAYS import tokens and reference them — never hardcode hex values in component files.",
+    "brand_primary": "#1A1A2E (deep navy — user bubbles, code block bg)",
+    "brand_accent": "#FF6B6B (coral — bullets, blockquote border, links, left accent border)",
+    "brand_muted": "#4A4A6A (muted navy — inline code text)",
+    "bg_main": "#F9FAFB (page background)",
+    "bg_surface": "#FFFFFF (header, input bar)",
+    "bg_input": "#F3F4F6 (input field, inline code bg)",
+    "text_primary": "#1A1A2E (agent body text, headings)",
+    "text_secondary": "#4B5563 (agent name label, table headers)",
+    "text_tertiary": "#9CA3AF (thinking indicator text, timestamps)",
+    "text_inverse": "#FFFFFF (user message text)",
+    "neutral_900": "#1A1A2E",
+    "neutral_200": "#E5E7EB (borders, hr)",
+    "neutral_100": "#F3F4F6 (code block text)",
+    "neutral_50": "#F9FAFB (table header bg)"
+  }
+}

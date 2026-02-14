@@ -141,3 +141,37 @@
 - **Fix:** Create a single `ledger_financial_snapshot` tool that calls all 4 backend endpoints in parallel via `Promise.all()` and returns a unified response.
 - **Benefit:** Matches how a human would approach the task (pull up a dashboard, not 4 separate reports). Reduces round-trips from 4→1 and cuts latency significantly.
 - **Design Principle:** Tools should consolidate frequently-chained multi-step tasks, handling multiple API calls under the hood.
+
+## 23. React Native Web Layout Optimization
+- **Problem:** React Native apps on web default to full-width flexible layouts, which look like "blown up" mobile apps on desktop screens.
+- **Solution:** Wrap your main content in a `webContainer` style:
+  ```typescript
+  webContainer: {
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+    flex: 1, // Ensure it fills height if needed
+  }
+  ```
+- **Tab Bar Alignment:** To align the bottom tab bar with the centered content, use `screenOptions` in `_layout.tsx` with `Platform.select`:
+  ```typescript
+  tabBarStyle: Platform.select({
+    web: {
+      width: '100%',
+      maxWidth: 600,
+      alignSelf: 'center',
+      // Optional: Add shadow/border for better definition
+    },
+    default: { ... }
+  })
+  ```
+- **Result:** A professional, centered mobile-first layout that looks intentional on desktop browsers.
+
+## 24. WebSockets & Localhost Ports
+- **Issue:** Chat feature failed silently on web ("Ledger is thinking..." indefinitely).
+- **Diagnosis:** The frontend connects to `ws://localhost:8002`, but the `agent-node` service wasn't running. React Native Web doesn't automatically piggyback on the bundler's port (8081).
+- **Fix:** Ensure all backend services (REST API on 8001, Agent/WS on 8002) are actively running. Use `lsof -i :8002` to check port status if unsure.
+
+## 25. Expo Router: Platform-Specific Layouts
+- **Learning:** `_layout.tsx` is the most powerful place to handle platform divergences. You can inject platform-specific styles (like the web container max-width) directly into the navigation container, ensuring *all* screens inherit the correct constraints without modifying every single page component.
+

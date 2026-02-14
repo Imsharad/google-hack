@@ -1,0 +1,505 @@
+{
+  "project": "Ledger Brain — UI Revamp",
+  "philosophy": "Airbnb-level craft meets Jony Ive restraint. One palette, one type scale, one spacing grid, one shadow. Empathy in every pixel. Ship beauty incrementally — each task leaves the app better than before.",
+  "tasks": [
+    {
+      "id": "U1",
+      "name": "Design Tokens & Foundation",
+      "status": "pending",
+      "priority": "critical",
+      "description": "Establish the single source of truth for every visual decision. Nothing else ships until this is solid.",
+      "subtasks": [
+        {
+          "id": "U1.1",
+          "name": "Create tokens.ts",
+          "description": "Single file exporting all design tokens. Replace every hardcoded hex across the codebase. Structure: colors (brand, semantic, neutrals), spacing (8px grid), radii, shadows, typography scale.",
+          "file": "constants/tokens.ts",
+          "spec": {
+            "colors": {
+              "brand": "#1A1A2E (primary dark) + 1 signature accent (pick: warm coral #FF6B6B, deep indigo #4F46E5, or rich teal #0D9488)",
+              "semantic": {
+                "success": "#16A34A",
+                "warning": "#F59E0B",
+                "danger": "#DC2626"
+              },
+              "neutrals": "#FAFAFA / #F3F4F6 / #E5E7EB / #9CA3AF / #6B7280 / #374151 / #1A1A2E",
+              "surface": "#FFFFFF",
+              "background": "#F9FAFB"
+            },
+            "spacing": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              24,
+              32,
+              40,
+              48,
+              64,
+              80
+            ],
+            "radii": {
+              "sm": 12,
+              "md": 20,
+              "lg": 24,
+              "full": 9999
+            },
+            "shadows": {
+              "sm": "0 1px 8px rgba(0,0,0,0.04)",
+              "md": "0 2px 16px rgba(0,0,0,0.06)",
+              "lg": "0 8px 32px rgba(0,0,0,0.08)"
+            },
+            "type_scale": {
+              "xs": 12,
+              "sm": 14,
+              "base": 17,
+              "lg": 22,
+              "xl": 28,
+              "xxl": 34
+            },
+            "line_heights": {
+              "xs": 16,
+              "sm": 20,
+              "base": 26,
+              "lg": 30,
+              "xl": 36,
+              "xxl": 42
+            },
+            "font": "Inter (import from Google Fonts or use system-ui fallback)"
+          },
+          "status": "done"
+        },
+        {
+          "id": "U1.2",
+          "name": "Create <Text> semantic component",
+          "description": "Replace ThemedText with a new component supporting variants: h1, h2, h3, body, bodyBold, caption, label, link. Each maps to type_scale + line_height + weight from tokens. Supports color override prop.",
+          "file": "components/ui/Text.tsx",
+          "status": "done"
+        },
+        {
+          "id": "U1.3",
+          "name": "Create <Card> base component",
+          "description": "Single card primitive with size variants (sm/md/lg) controlling padding (16/24/32). Background: white. Border-radius: radii.lg (24). Shadow: shadows.md. No borders ever. Optional tint prop for subtle background wash (rgba of semantic color at 0.04 opacity).",
+          "file": "components/ui/Card.tsx",
+          "status": "done"
+        },
+        {
+          "id": "U1.4",
+          "name": "Create <Button> component",
+          "description": "Variants: primary (filled accent), secondary (outlined), ghost (text only). Sizes: sm (40h), md (48h), lg (56h). Full-width by default. Border-radius: radii.full. No tiny pill buttons anywhere.",
+          "file": "components/ui/Button.tsx",
+          "status": "done"
+        },
+        {
+          "id": "U1.5",
+          "name": "Purge all hardcoded colors",
+          "description": "Search-and-replace every raw hex value (#2196F3, #1e1e1e, #007AFF, #34C759, etc.) across all components and screens. Point them to tokens.ts imports. Zero tolerance for magic values.",
+          "status": "pending"
+        }
+      ],
+      "test": "Every color, spacing value, font size, and shadow in the app traces back to tokens.ts. No hardcoded values remain."
+    },
+    {
+      "id": "U2",
+      "name": "Typography Overhaul",
+      "status": "pending",
+      "priority": "critical",
+      "description": "Ship one typeface used with discipline. Kill all engineering jargon from user-facing text.",
+      "subtasks": [
+        {
+          "id": "U2.1",
+          "name": "Install Inter font",
+          "description": "Add Inter via expo-google-fonts or @fontsource/inter. Configure in app _layout.tsx. Weights needed: 400 (regular), 500 (medium), 600 (semibold), 700 (bold). Remove all platform-specific font stacks from theme.ts.",
+          "status": "pending"
+        },
+        {
+          "id": "U2.2",
+          "name": "Apply type scale globally",
+          "description": "Audit every text element. Map to strict scale: 12/14/17/22/28/34. Kill all rogue sizes (16px body, 18px card title, 20px headers, 24px title — all non-standard). Use the new <Text> component everywhere.",
+          "status": "pending"
+        },
+        {
+          "id": "U2.3",
+          "name": "Rewrite user-facing copy",
+          "description": "Remove: 'Plaid x OpenClaw PoC', 'Test Connection', 'Refresh Data', any status codes or technical labels. Replace with human language: 'Your Money', 'Connected', 'Accounts'. Every string should pass the 'would my mom understand this?' test.",
+          "status": "pending"
+        }
+      ],
+      "test": "Only Inter renders. Every text element uses <Text> with a named variant. No jargon visible anywhere in the app."
+    },
+    {
+      "id": "U3",
+      "name": "Spacing & Layout Grid",
+      "status": "pending",
+      "priority": "critical",
+      "description": "Introduce an 8px grid. Add whitespace everywhere. Make it breathe.",
+      "subtasks": [
+        {
+          "id": "U3.1",
+          "name": "Enforce 8px grid on all screens",
+          "description": "Audit every margin, padding, gap. Replace with nearest 8px multiple from tokens.spacing. Current offenders: 10px, 15px, 30px, 60px — all become 8/16/32/64. Use spacing constants, never raw numbers.",
+          "status": "pending"
+        },
+        {
+          "id": "U3.2",
+          "name": "Set max content width",
+          "description": "Wrap all screen content in a centered container with maxWidth: 480 on web. Add horizontal padding of 24px. This gives the premium mobile-first feel on desktop (like Monzo/Revolut web apps).",
+          "status": "pending"
+        },
+        {
+          "id": "U3.3",
+          "name": "Section spacing",
+          "description": "Add 40-48px vertical gaps between major content blocks (header → gauge, gauge → AI summary, summary → card feed). Current content is packed too tight. Let sections breathe.",
+          "status": "pending"
+        }
+      ],
+      "test": "Every spacing value is a multiple of 8. Content is centered with 480px max-width on web. Sections have clear visual separation through whitespace alone."
+    },
+    {
+      "id": "U4",
+      "name": "Home Screen Redesign",
+      "status": "pending",
+      "priority": "high",
+      "description": "Transform from debug panel to product. This is the first screen users see — it must feel like money.",
+      "subtasks": [
+        {
+          "id": "U4.1",
+          "name": "Hero balance section",
+          "description": "Replace 'Plaid x OpenClaw PoC' title + status + test buttons with: a greeting line (time-of-day aware, reuse Insights pattern), a large centered balance number (34px bold), and a subtle +/- change indicator below it.",
+          "status": "pending"
+        },
+        {
+          "id": "U4.2",
+          "name": "Bank connection card",
+          "description": "Replace raw PlaidLinkButton with a Card component: icon + 'Connect your bank' title + 'Link your accounts to get started' subtitle + primary Button. Show only when no accounts connected. After connection, replace with account summary card.",
+          "status": "pending"
+        },
+        {
+          "id": "U4.3",
+          "name": "Transaction list redesign",
+          "description": "Each row: 40px circle with merchant initial (colored by category hash) on left, merchant name (body bold) + date (caption, gray) stacked in middle, amount right-aligned (body bold, negative=danger color, positive=success color). White background. No dark tiles. Divider: 1px #F3F4F6 between rows. Group by date with sticky headers.",
+          "status": "pending"
+        },
+        {
+          "id": "U4.4",
+          "name": "Unify Home to light theme",
+          "description": "Remove all #1e1e1e, #2c2c2e dark overrides. Home screen now uses the same light background (#F9FAFB) as Insights. One visual identity across the app.",
+          "status": "pending"
+        }
+      ],
+      "test": "Home screen shows balance hero, clean transaction list with merchant avatars, and Plaid CTA as a beautiful card. Zero debug UI visible."
+    },
+    {
+      "id": "U5",
+      "name": "Card System Redesign",
+      "status": "pending",
+      "priority": "high",
+      "description": "Elevate the CardRenderer from functional to delightful. Cards are the core unit of insight delivery.",
+      "subtasks": [
+        {
+          "id": "U5.1",
+          "name": "Update CardRenderer to use <Card> base",
+          "description": "Refactor CardRenderer to extend the new Card component. Remove inline shadow/border/radius definitions. Use Card's tint prop for type-based background washes: warning → rgba(245,158,11,0.04), danger → rgba(220,38,38,0.04), success → rgba(22,163,74,0.04).",
+          "status": "pending"
+        },
+        {
+          "id": "U5.2",
+          "name": "Icon container redesign",
+          "description": "Increase icon container from 44px to 48px. Border-radius from 12 to 16. Use token accent colors at 0.1 opacity for background. Icon size 24px.",
+          "status": "pending"
+        },
+        {
+          "id": "U5.3",
+          "name": "Action buttons to full-width",
+          "description": "Replace tiny pill action buttons with full-width <Button variant='secondary'> at bottom of card. If multiple actions: stack vertically with 8px gap. Primary action gets variant='primary'. Think Airbnb's 'Reserve' button prominence.",
+          "status": "pending"
+        },
+        {
+          "id": "U5.4",
+          "name": "Do/Don't card layout",
+          "description": "Two-column layout with green left column (Do) and red right column (Don't). Each item: small colored dot + text. Clean separation. No heavy borders or backgrounds — just color and whitespace.",
+          "status": "pending"
+        }
+      ],
+      "test": "Cards feel premium, spacious, and actionable. No tiny pills. Each card type has a distinct but subtle personality through background tint."
+    },
+    {
+      "id": "U6",
+      "name": "Insights Screen Polish",
+      "status": "pending",
+      "priority": "high",
+      "description": "The Insights screen is closest to good. Push it to great.",
+      "subtasks": [
+        {
+          "id": "U6.1",
+          "name": "SpendingGauge hero treatment",
+          "description": "Increase gauge size from 150x100 to 240x160. Center it as the hero element of the screen. Add animated fill on mount (0 → value over 800ms, ease-out). Below gauge: current pace in large text + 'vs $X avg' as caption.",
+          "status": "pending"
+        },
+        {
+          "id": "U6.2",
+          "name": "Ledger's Take redesign",
+          "description": "Remove left-border blockquote style. Replace with a full Card component with subtle brand-tint background. Add a small Ledger avatar/icon (32px circle) top-left. Title stays uppercase caption style. Body text: 22px, italic, 500 weight. Feels like a personal note from your financial advisor.",
+          "status": "pending"
+        },
+        {
+          "id": "U6.3",
+          "name": "Card feed spacing",
+          "description": "Gap between cards: 16px. Section title 'Your Insights' uses h3 variant with 32px top margin. Add subtle fade-in animation on each card (staggered 50ms).",
+          "status": "pending"
+        },
+        {
+          "id": "U6.4",
+          "name": "Empty state with illustration",
+          "description": "Replace activity indicator + 'Analyzing finances...' with: a minimal line illustration (wallet or chart), h3 'Crunching your numbers', body caption 'This takes a few seconds'. Centered vertically. Use Lottie or a static SVG.",
+          "status": "pending"
+        }
+      ],
+      "test": "Gauge animates on mount. Ledger's Take feels personal. Cards fade in with stagger. Empty state is beautiful."
+    },
+    {
+      "id": "U7",
+      "name": "Chat Screen Redesign",
+      "status": "pending",
+      "priority": "high",
+      "description": "Move from 2015 chat bubbles to a modern conversational UI.",
+      "subtasks": [
+        {
+          "id": "U7.1",
+          "name": "Message layout overhaul",
+          "description": "Drop colored bubbles. Both user and agent messages are left-aligned. Agent messages: small Ledger avatar (28px circle) + message on white Card (sm). User messages: no avatar, light gray background (#F3F4F6), same left alignment. Thin timestamp between message groups. This is the Airbnb messaging / Linear style.",
+          "status": "pending"
+        },
+        {
+          "id": "U7.2",
+          "name": "Input bar redesign",
+          "description": "Full-width rounded pill input (radii.full, 48px height). Background #F3F4F6. Send icon INSIDE the input, right-aligned, 32px circle with brand accent color. No separate button. Subtle focus ring on input active. Placeholder: 'Ask Ledger anything...'",
+          "status": "pending"
+        },
+        {
+          "id": "U7.3",
+          "name": "Typing indicator",
+          "description": "Replace spinner + text with animated 3-dot pulse. Three 8px circles in a row, sequentially scaling up/down with 150ms stagger. Color: neutral gray (#9CA3AF). Below a small Ledger avatar. No text label.",
+          "status": "pending"
+        },
+        {
+          "id": "U7.4",
+          "name": "Inline card parity",
+          "description": "Cards rendered inside chat messages use the same CardRenderer as Insights feed. Ensure padding, shadow, and spacing match. Max-width of inline cards: 100% of message container. No visual jank.",
+          "status": "pending"
+        },
+        {
+          "id": "U7.5",
+          "name": "Chat header",
+          "description": "Minimal header: Ledger avatar (40px) + 'Ledger' name (body bold) + 'Financial Analyst' caption below. Centered or left-aligned. Subtle bottom border (#F3F4F6). No 'Talk to Ledger' subtitle.",
+          "status": "pending"
+        }
+      ],
+      "test": "Chat feels like a premium messaging app. No colored bubbles. Input is a sleek pill. Typing indicator pulses. Cards render cleanly inline."
+    },
+    {
+      "id": "U8",
+      "name": "Navigation & Tab Bar",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Tab bar is the persistent frame of the entire app. Make it invisible until needed.",
+      "subtasks": [
+        {
+          "id": "U8.1",
+          "name": "Tab bar redesign",
+          "description": "Add text labels below each icon: 'Home', 'Insights', 'Chat'. Active state: filled icon + bold label + brand accent color. Inactive: outline icon + regular label + #9CA3AF gray. Tab bar background: white with top border #F3F4F6 (1px). Height: 64px (+ safe area).",
+          "status": "pending"
+        },
+        {
+          "id": "U8.2",
+          "name": "Tab transition animations",
+          "description": "Cross-fade between tab screens (200ms ease). No hard cuts. Use React Navigation's built-in animation config or custom interpolator.",
+          "status": "pending"
+        },
+        {
+          "id": "U8.3",
+          "name": "Active tab indicator",
+          "description": "Small dot (6px circle, brand accent) above or below the active icon. Animates position on tab switch (spring animation, 300ms).",
+          "status": "pending"
+        }
+      ],
+      "test": "Tab bar has labels. Active state is obvious. Transitions are smooth. Tab bar feels like part of a premium app."
+    },
+    {
+      "id": "U9",
+      "name": "Motion & Micro-interactions",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Animation is the difference between 'functional' and 'delightful'. Add purposeful motion everywhere.",
+      "subtasks": [
+        {
+          "id": "U9.1",
+          "name": "Card entrance animations",
+          "description": "On Insights screen load: each card fades in (opacity 0→1) and slides up (translateY 20→0) with staggered 50ms delay. Duration: 400ms. Easing: ease-out. Use Animated API or react-native-reanimated.",
+          "status": "pending"
+        },
+        {
+          "id": "U9.2",
+          "name": "Gauge animation",
+          "description": "SpendingGauge arc animates from 0 to target value on mount. Duration: 800ms. Easing: ease-out. The number below also counts up. Satisfying and informative.",
+          "status": "pending"
+        },
+        {
+          "id": "U9.3",
+          "name": "Pull-to-refresh branding",
+          "description": "Custom pull-to-refresh indicator: small Ledger icon or brand mark that rotates/pulses during refresh. Replace default ActivityIndicator.",
+          "status": "pending"
+        },
+        {
+          "id": "U9.4",
+          "name": "Button press feedback",
+          "description": "All buttons scale down to 0.97 on press (100ms spring). Opacity drops to 0.8. Release springs back. Haptic feedback on iOS preserved.",
+          "status": "pending"
+        },
+        {
+          "id": "U9.5",
+          "name": "Success celebration",
+          "description": "When spending zone is green: subtle confetti burst or checkmark animation on the gauge. Brief (1s), non-blocking. Reward good behavior. Consider lottie-react-native for this.",
+          "status": "pending"
+        }
+      ],
+      "test": "Cards animate in. Gauge fills smoothly. Buttons feel tactile. Green zone triggers a small celebration. App feels alive."
+    },
+    {
+      "id": "U10",
+      "name": "Emotional Design & Edge States",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Every state is a branding opportunity. Empty, loading, error — all should feel intentional.",
+      "subtasks": [
+        {
+          "id": "U10.1",
+          "name": "Empty state: No accounts connected",
+          "description": "Illustration (minimal line art of a wallet or bank) + h2 'Your finances, one view' + body 'Connect your bank account to get personalized insights' + primary Button 'Get Started'. Centered. Generous whitespace.",
+          "status": "pending"
+        },
+        {
+          "id": "U10.2",
+          "name": "Empty state: No transactions yet",
+          "description": "Illustration (minimal receipt or calendar) + h3 'No transactions yet' + caption 'Transactions will appear here once your bank syncs'. Centered.",
+          "status": "pending"
+        },
+        {
+          "id": "U10.3",
+          "name": "Error state",
+          "description": "Illustration (minimal broken link or cloud) + h3 'Something went wrong' + caption with specific error context + secondary Button 'Try Again'. Never show raw error messages or status codes to the user.",
+          "status": "pending"
+        },
+        {
+          "id": "U10.4",
+          "name": "Time-of-day theming",
+          "description": "Extend the greeting pattern: morning (6-12) gets a warm background wash (subtle warm gradient or warm-tinted header), evening (18-24) gets a cooler tone. Subtle — just a hint of warmth/coolness in the top 200px of the screen.",
+          "status": "pending"
+        },
+        {
+          "id": "U10.5",
+          "name": "Ledger personality",
+          "description": "Create a small avatar/icon for Ledger (32px circle, brand accent background, 'L' initial or simple robot/brain illustration). Use it in: Chat messages, Insights 'Ledger's Take', loading states. Gives the AI a face and builds trust.",
+          "status": "pending"
+        }
+      ],
+      "test": "Every possible state (empty, loading, error, success) has a designed experience. Ledger has a visual identity. Time-of-day adds warmth."
+    }
+  ],
+  "dependency_graph": {
+    "U1": [],
+    "U2": [
+      "U1"
+    ],
+    "U3": [
+      "U1"
+    ],
+    "U4": [
+      "U1",
+      "U2",
+      "U3"
+    ],
+    "U5": [
+      "U1",
+      "U2"
+    ],
+    "U6": [
+      "U5",
+      "U3"
+    ],
+    "U7": [
+      "U1",
+      "U2",
+      "U5"
+    ],
+    "U8": [
+      "U1"
+    ],
+    "U9": [
+      "U4",
+      "U5",
+      "U6",
+      "U7"
+    ],
+    "U10": [
+      "U1",
+      "U2"
+    ]
+  },
+  "execution_order": {
+    "phase_1_foundation": [
+      "U1"
+    ],
+    "phase_2_system": [
+      "U2",
+      "U3",
+      "U8"
+    ],
+    "phase_3_screens": [
+      "U4",
+      "U5",
+      "U6",
+      "U7"
+    ],
+    "phase_4_delight": [
+      "U9",
+      "U10"
+    ],
+    "note": "Phase 1 is a hard blocker. Phases 2-3 can run in parallel tracks. Phase 4 is polish — ship without it if needed, but it's what separates good from great."
+  },
+  "files_to_create": [
+    "constants/tokens.ts",
+    "components/ui/Text.tsx",
+    "components/ui/Card.tsx",
+    "components/ui/Button.tsx",
+    "components/ui/LedgerAvatar.tsx",
+    "components/ui/MerchantAvatar.tsx",
+    "components/ui/DotIndicator.tsx",
+    "components/ui/EmptyState.tsx",
+    "components/ui/TypingIndicator.tsx"
+  ],
+  "files_to_heavily_modify": [
+    "constants/theme.ts",
+    "components/CardRenderer.tsx",
+    "components/TransactionList.tsx",
+    "components/Visuals.tsx",
+    "components/themed-text.tsx",
+    "app/(tabs)/index.tsx",
+    "app/(tabs)/insights.tsx",
+    "app/(tabs)/chat.tsx",
+    "app/(tabs)/_layout.tsx"
+  ],
+  "files_to_delete_or_deprecate": [
+    "components/themed-text.tsx (replaced by ui/Text.tsx)",
+    "components/themed-view.tsx (replaced by direct token usage)"
+  ],
+  "guiding_principles": [
+    "One palette. One typeface. One grid. One shadow. No exceptions.",
+    "When in doubt, add whitespace.",
+    "Every pixel should feel intentional. If you can't explain why it's there, remove it.",
+    "The app should feel like it was made by someone who respects your money and your time.",
+    "Animations serve understanding, not decoration. If it doesn't help the user, cut it.",
+    "Design for the state the user is most likely in, but make every other state beautiful too."
+  ]
+}

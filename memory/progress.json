@@ -142,6 +142,11 @@
             "id": "agent_refactor_granular_tools",
             "description": "Refactored agent from monolithic `get_insights` to granular tools (`get_subscriptions`, `get_anomalies`, `get_forecast`, filtered `query_transactions`). Added corresponding backend endpoints and updated system prompt with tool routing table.",
             "status": "completed"
+        },
+        {
+            "id": "insights_v2_web_polish",
+            "description": "Implemented Insights v2 with Health Score, 7 new components, and LLM Narrator v2. Polished Web Layout (max-width containers, footer alignment) and verified Chat functionality.",
+            "status": "completed"
         }
     ],
     "configuration": {
@@ -177,18 +182,13 @@
     "next_steps": [
         {
             "priority": "high",
-            "action": "Verify End-to-End Flow",
-            "context": "Test the full loop: App -> Plaid -> Backend -> Agent (Insights + Chat)."
+            "action": "Final Demo Rehearsal",
+            "context": "Walk through the full flow: Connect -> Insights -> Chat to ensure stability."
         },
         {
             "priority": "medium",
-            "action": "Visual Polish of Cards",
-            "context": "Improve CSS/Styling in React Native for better premium feel."
-        },
-        {
-            "priority": "low",
-            "action": "Wait for/Debug iOS Simulator",
-            "context": "Download is slow. Use Web Demo for now."
+            "action": "Code Popup Component",
+            "context": "Add a popup to show the raw JSON/Code behind the insights for the hackathon demo."
         }
     ]
 }
