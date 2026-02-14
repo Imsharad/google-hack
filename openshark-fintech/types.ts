@@ -37,9 +37,12 @@ export interface InsightsV2Response {
     savings_rate: number;
   };
   category_breakdown: { category: string; amount: number; percentage: number }[];
-  alerts: { severity: string; title: string; body: string }[];
-  subscriptions: { subscriptions: { name: string; amount: number; frequency: string }[]; total: number };
+  // Backend PriorityAlert: { id, priority, icon, title, body }
+  alerts: { id?: string; priority: string; icon?: string; title: string; body: string }[];
+  // Backend detect_subscriptions: { subscriptions: [{ merchant, amount, interval_days, annual_cost, five_year_cost }] }
+  subscriptions: { subscriptions: { merchant: string; amount: number; interval_days: number; annual_cost: number }[] };
   daily_trend: { date: string; amount: number }[];
+  // Backend narrative: { headline, text (mapped from "narrative" field), generated_at }
   narrative: { headline: string; text: string; generated_at: string };
   spending_velocity: number;
 }

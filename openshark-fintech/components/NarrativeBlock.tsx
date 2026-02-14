@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { renderInline } from './MarkdownMessage';
 
 interface Props {
   narrative: {
@@ -18,7 +19,7 @@ const NarrativeBlock: React.FC<Props> = ({ narrative }) => {
       </div>
 
       <p className="text-sm font-bold text-airbnb-black mb-2">{narrative.headline}</p>
-      <p className="text-xs text-airbnb-dark leading-relaxed line-clamp-6">{narrative.text}</p>
+      <p className="text-xs text-airbnb-dark leading-relaxed">{renderInline(narrative.text)}</p>
 
       {narrative.generated_at && (
         <p className="text-[10px] text-airbnb-gray mt-4">

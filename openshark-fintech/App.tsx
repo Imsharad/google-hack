@@ -10,8 +10,9 @@ import HealthScoreRing from './components/HealthScoreRing';
 import AlertCard from './components/AlertCard';
 import SubscriptionRadar from './components/SubscriptionRadar';
 import NarrativeBlock from './components/NarrativeBlock';
+import DebitCard from './components/DebitCard';
 import { fetchTransactions, fetchBalance, fetchInsightsV2 } from './services/apiService';
-import { Bell, Search, UserCircle, RefreshCcw, ShieldCheck, TrendingUp, AlertOctagon, Bot, ChevronDown, Loader2, WifiOff } from 'lucide-react';
+import { Bell, Search, RefreshCcw, ShieldCheck, TrendingUp, AlertOctagon, Bot, ChevronDown, Loader2, WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
@@ -53,12 +54,18 @@ const App: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Quick Stats — use backend balance if available, else compute from transactions
+  // Quick Stats
   const totalBalance = balance ?? transactions.reduce((acc, t) => acc + t.amount, 0);
   const monthlySpend = transactions
     .filter(t => t.amount < 0 && new Date(t.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
-  const anomalyCount = insights?.alerts?.length ?? 0;
+
+  // Safe access — guard every sub-field from the insights blob
+  const alerts = insights?.alerts ?? [];
+  const subs = insights?.subscriptions ?? null;
+  const narrative = insights?.narrative ?? null;
+  const healthScore = insights?.health_score ?? null;
+  const anomalyCount = alerts.length;
 
   const renderContent = () => {
     switch (view) {
@@ -83,7 +90,6 @@ const App: React.FC = () => {
             <h2 className="text-3xl font-bold text-airbnb-black">Settings</h2>
             <DataSourceSelector onDataLoaded={loadData} />
 
-            {/* Connection Status */}
             <div className="bg-white rounded-2xl border border-airbnb-line p-8 shadow-card">
               <h3 className="text-xl font-semibold mb-6">Connection Status</h3>
               <div className="space-y-4">
@@ -126,17 +132,22 @@ const App: React.FC = () => {
                 <p className="text-airbnb-gray mt-1">Welcome back. Here's what's happening with your money.</p>
               </div>
 
-              {insights?.narrative && (
+              {narrative && (
                 <div className="mt-4 md:mt-0 flex items-center bg-white border border-airbnb-line shadow-card rounded-xl px-4 py-3 cursor-pointer hover:shadow-floating transition-shadow" onClick={() => setView(ViewState.LEDGER_AGENT)}>
                   <div className="w-8 h-8 rounded-full bg-airbnb-red flex items-center justify-center mr-3">
                     <Bot className="text-white w-4 h-4" />
                   </div>
                   <div className="max-w-xs">
                     <p className="text-xs font-bold text-airbnb-black uppercase">Ledger Analysis</p>
-                    <p className="text-sm text-airbnb-gray truncate">{insights.narrative.headline}</p>
+                    <p className="text-sm text-airbnb-gray truncate">{narrative.headline}</p>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Debit Card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <DebitCard balance={balance} />
             </div>
 
             {/* Top Stats Cards */}
@@ -146,10 +157,10 @@ const App: React.FC = () => {
                   <div className="p-3 bg-airbnb-light rounded-xl">
                     <ShieldCheck size={24} className="text-airbnb-black" />
                   </div>
-                  {insights && (
+                  {insights?.month_summary && (
                     <span className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold">
                       <TrendingUp size={12} className="mr-1" />
-                      {insights.month_summary?.savings_rate?.toFixed(0) || 0}% saved
+                      {insights.month_summary.savings_rate?.toFixed(0) || 0}% saved
                     </span>
                   )}
                 </div>
@@ -185,9 +196,9 @@ const App: React.FC = () => {
                 <div className="flex items-end mt-1">
                   <p className="text-3xl font-extrabold text-airbnb-black">{anomalyCount}</p>
                 </div>
-                {anomalyCount > 0 ? (
+                {anomalyCount > 0 && alerts[0] ? (
                   <p className="text-xs text-airbnb-red mt-4 font-medium">
-                    {insights!.alerts[0].title}
+                    {alerts[0].title}
                   </p>
                 ) : (
                   <p className="text-xs text-green-600 mt-4 font-medium">Everything looks good.</p>
@@ -208,17 +219,34 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Insights Row */}
-            {insights && (
+            {/* Insights Row — only render when we have real data for each slot */}
+            {healthScore != null && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <HealthScoreRing score={insights.health_score} />
+                <HealthScoreRing score={healthScore} />
                 <div className="space-y-4">
-                  {insights.alerts.slice(0, 2).map((alert, i) => (
-                    <AlertCard key={i} severity={alert.severity} title={alert.title} body={alert.body} />
+                  {alerts.slice(0, 2).map((alert, i) => (
+                    <AlertCard key={i} priority={alert.priority} title={alert.title} body={alert.body} />
                   ))}
+                  {alerts.length === 0 && (
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+                      No alerts — you're doing great.
+                    </div>
+                  )}
                 </div>
-                <SubscriptionRadar subscriptions={insights.subscriptions} />
-                <NarrativeBlock narrative={insights.narrative} />
+                {subs ? (
+                  <SubscriptionRadar subscriptions={subs} />
+                ) : (
+                  <div className="bg-white rounded-2xl border border-airbnb-line shadow-card p-6 text-sm text-airbnb-gray">
+                    No subscription data yet.
+                  </div>
+                )}
+                {narrative ? (
+                  <NarrativeBlock narrative={narrative} />
+                ) : (
+                  <div className="bg-white rounded-2xl border border-airbnb-line shadow-card p-6 text-sm text-airbnb-gray">
+                    AI narrative loading...
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -230,7 +258,10 @@ const App: React.FC = () => {
     <div className="bg-[#F7F7F7] min-h-screen text-airbnb-black font-sans selection:bg-airbnb-light selection:text-airbnb-black">
       <Sidebar currentView={view} setView={setView} />
 
-      <main className="lg:ml-64 transition-all duration-300">
+      {/* FIX: replaced transition-all with transition-[margin] — transition-all
+          causes the browser to animate every recomputed property on tab resume,
+          which blanks the content during the recomposite cycle. */}
+      <main className="lg:ml-64 transition-[margin] duration-300">
         {/* Navbar */}
         <header className="h-20 bg-white border-b border-airbnb-line sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between">
           <div className="hidden md:flex items-center bg-airbnb-light border border-airbnb-line rounded-full px-4 py-2.5 w-96 hover:shadow-sm transition-shadow">
@@ -258,7 +289,7 @@ const App: React.FC = () => {
                 <ChevronDown size={16} />
               </div>
               <div className="w-8 h-8 bg-airbnb-black rounded-full flex items-center justify-center text-white text-xs font-bold">
-                OS
+                SJ
               </div>
             </div>
           </div>

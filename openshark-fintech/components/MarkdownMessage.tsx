@@ -4,7 +4,7 @@ import React from 'react';
 // Converts markdown inline syntax to React elements.
 // Order matters: bold-italic before bold before italic.
 
-function renderInline(text: string): React.ReactNode[] {
+export function renderInline(text: string): React.ReactNode[] {
   // Regex for inline patterns — ordered by specificity
   const pattern =
     /(\*\*\*(.+?)\*\*\*)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+?)`)|(\[([^\]]+)\]\(([^)]+)\))/g;

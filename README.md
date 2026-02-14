@@ -2,6 +2,8 @@
 
 OpenShark is a next-generation fintech platform built for the Google Hackathon. It combines real-time banking data (via Plaid) with an advanced AI insights engine to provide users with a "Financial DNA" analysis, anomaly detection, subscription tracking, and cashflow forecasting.
 
+![OpenShark Chat Demo](docs/chat_demo.png)
+
 ## 🏗 Project Architecture
 
 The project is divided into three main components:

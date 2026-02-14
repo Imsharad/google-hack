@@ -3,13 +3,13 @@ import { Repeat } from 'lucide-react';
 
 interface Props {
   subscriptions: {
-    subscriptions: { name: string; amount: number; frequency: string }[];
-    total: number;
+    subscriptions: { merchant: string; amount: number; interval_days: number; annual_cost: number }[];
   };
 }
 
 const SubscriptionRadar: React.FC<Props> = ({ subscriptions }) => {
-  const { subscriptions: subs, total } = subscriptions;
+  const subs = subscriptions?.subscriptions ?? [];
+  const total = subs.reduce((acc, s) => acc + s.amount, 0);
 
   return (
     <div className="bg-white rounded-2xl border border-airbnb-line shadow-card p-6">
@@ -22,17 +22,21 @@ const SubscriptionRadar: React.FC<Props> = ({ subscriptions }) => {
         ${total.toFixed(2)}<span className="text-sm font-normal text-airbnb-gray">/mo</span>
       </p>
 
-      <div className="space-y-3">
-        {subs.slice(0, 5).map((sub, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <span className="text-sm text-airbnb-black">{sub.name}</span>
-            <span className="text-sm font-semibold text-airbnb-black">${sub.amount.toFixed(2)}</span>
-          </div>
-        ))}
-        {subs.length > 5 && (
-          <p className="text-xs text-airbnb-gray">+{subs.length - 5} more</p>
-        )}
-      </div>
+      {subs.length === 0 ? (
+        <p className="text-sm text-airbnb-gray">No recurring charges detected.</p>
+      ) : (
+        <div className="space-y-3">
+          {subs.slice(0, 5).map((sub, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <span className="text-sm text-airbnb-black">{sub.merchant}</span>
+              <span className="text-sm font-semibold text-airbnb-black">${sub.amount.toFixed(2)}</span>
+            </div>
+          ))}
+          {subs.length > 5 && (
+            <p className="text-xs text-airbnb-gray">+{subs.length - 5} more</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

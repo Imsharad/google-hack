@@ -12,10 +12,13 @@ function getZone(score: number): { label: string; color: string; bgColor: string
 }
 
 const HealthScoreRing: React.FC<Props> = ({ score }) => {
-  const zone = getZone(score);
+  // Guard: coerce to number, default to 0 if NaN/null/undefined
+  const safeScore = Number.isFinite(score) ? score : 0;
+
+  const zone = getZone(safeScore);
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const offset = circumference - (safeScore / 100) * circumference;
 
   return (
     <div className="bg-white rounded-2xl border border-airbnb-line shadow-card p-6 flex flex-col items-center">
@@ -33,11 +36,11 @@ const HealthScoreRing: React.FC<Props> = ({ score }) => {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            className="transition-all duration-1000 ease-out"
+            className="transition-[stroke-dashoffset] duration-1000 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-extrabold text-airbnb-black">{Math.round(score)}</span>
+          <span className="text-2xl font-extrabold text-airbnb-black">{Math.round(safeScore)}</span>
         </div>
       </div>
       <span className={`mt-3 text-xs font-bold px-3 py-1 rounded-full ${zone.bgColor}`} style={{ color: zone.color }}>
