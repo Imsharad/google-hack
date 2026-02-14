@@ -1,4 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks
+from typing import List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -43,6 +44,7 @@ def ingest_data(payload: PlaidPayload):
 # --- Plaid Integration ---
 import os
 import plaid
+import random
 from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
@@ -303,6 +305,20 @@ def generate_insights(session: Session):
     """
     print("DEBUG: Starting background insight generation...")
     
+    # 0. Fetch Transactions
+    transactions = session.exec(select(Transaction)).all()
+    if not transactions:
+        print("DEBUG: No transactions found. Skipping insight generation.")
+        return
+
+    # 1. Compute Components
+    # Using the imported functions from insights_engine
+    dna = compute_financial_dna(transactions)
+    anomalies = detect_anomalies(transactions)
+    subs = detect_subscriptions(transactions)
+    forecast = forecast_cashflow(transactions, days=30)
+    velocity = compute_spending_velocity(transactions)
+
     raw_analysis = {
         "financial_dna": dna,
         "anomalies": anomalies,
@@ -420,6 +436,22 @@ def get_spending_velocity(session: Session = Depends(get_session)):
     return compute_spending_velocity(transactions)
 
 
+@app.get("/balance")
+def get_total_balance(session: Session = Depends(get_session)):
+    """
+    Calculates the total balance across all accounts based on transactions.
+    In this model, spending is positive and income (salary) is negative.
+    Total Balance = Sum(-amount for all transactions)
+    """
+    transactions = session.exec(select(Transaction)).all()
+    if not transactions:
+        return {"total_balance": 0.0, "currency": "USD"}
+    
+    # Simple sum of -amounts. 
+    # Example: Salary -3500 + Coffee 5.0 -> Balance 3495.0
+    total = sum(-t.amount for t in transactions)
+    return {"total_balance": round(total, 2), "currency": "USD"}
+
 
 @app.post("/seed_transactions")
 def seed_transactions_endpoint(session: Session = Depends(get_session)):
@@ -521,3 +553,170 @@ def reset_database(session: Session = Depends(get_session)):
     session.exec(delete(AgentInsight))
     session.commit()
     return {"status": "success", "message": "Database wiped clean."}
+
+class CustomUserAccount(BaseModel):
+    type: str
+    subtype: str
+    meta: dict
+    transactions: List[dict]
+
+class CustomUserPayload(BaseModel):
+    override_accounts: List[CustomUserAccount]
+
+@app.post("/seed/custom")
+def seed_custom_data(payload: CustomUserPayload, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    """
+    Directly injects high-fidelity demo data from our generator script.
+    Bypasses Plaid Sandbox to ensure perfect categories and instant availability.
+    """
+    # 1. Wipe clean for the demo
+    session.exec(delete(Transaction))
+    session.exec(delete(Account))
+    session.exec(delete(AgentInsight))
+    
+    total_tx = 0
+    accounts_created = 0
+    
+    try:
+        for acc_data in payload.override_accounts:
+            # Create Account
+            account = Account(
+                provider_account_id=f"custom_{random.randint(1000, 9999)}",
+                name=acc_data.meta.get("name", "Custom Demo Bank"),
+                official_name=acc_data.meta.get("name", "Custom Demo Bank"),
+                type=acc_data.type,
+                subtype=acc_data.subtype,
+                mask="0000",
+                data_provider="manual_seed"
+            )
+            session.add(account)
+            session.commit()
+            session.refresh(account)
+            accounts_created += 1
+            
+            # Create Transactions
+            for t in acc_data.transactions:
+                # Plaid Custom User format: "category": ["Food", "Coffee"]
+                cat_primary = "Uncategorized"
+                if t.get("category") and len(t["category"]) > 0:
+                    cat_primary = t["category"][0]
+                
+                # Heuristic: Ensure specific merchants get specific categories if missing
+                desc = t.get("description", "")
+                if "Uber" in desc: cat_primary = "Transportation"
+                if "Starbucks" in desc: cat_primary = "Food and Drink"
+                if "Netflix" in desc: cat_primary = "Service"
+                
+                new_tx = Transaction(
+                    account_id=account.id,
+                    provider_transaction_id=f"seed_{random.randint(100000, 999999)}_{total_tx}",
+                    amount=t.get("amount", 0.0),
+                    date=datetime.strptime(t["date"], "%Y-%m-%d"),
+                    name=desc,
+                    merchant_name=desc, # Use description as merchant for custom data
+                    category_primary=cat_primary,
+                    payment_channel="online",
+                    pending=False
+                )
+                session.add(new_tx)
+                total_tx += 1
+        
+        session.commit()
+        
+        # 3. Trigger AI Insights immediately
+        print("DEBUG: Custom seed complete. Generating insights...")
+        generate_insights(session)
+        
+        return {
+            "status": "success", 
+            "message": f"Seeded {accounts_created} accounts and {total_tx} transactions.",
+            "insights_triggered": True
+        }
+        
+    except Exception as e:
+        print(f"Seeding failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+@app.post("/seed/demo")
+def seed_demo_data(background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    """
+    One-click setup for the demo. 
+    Generates fresh data server-side and seeds the DB.
+    """
+    from .demo_data import generate_custom_user
+    
+    # Generate data
+    user_data = generate_custom_user()
+    
+    # 1. Wipe clean
+    session.exec(delete(Transaction))
+    session.exec(delete(Account))
+    session.exec(delete(AgentInsight))
+    
+    total_tx = 0
+    accounts_created = 0
+    
+    try:
+        accounts = user_data.get("override_accounts", [])
+        
+        for acc_data in accounts:
+            # Create Account
+            account = Account(
+                provider_account_id=f"demo_{random.randint(1000, 9999)}",
+                name=acc_data.get("meta", {}).get("name", "Demo Bank"),
+                official_name=acc_data.get("meta", {}).get("name", "Demo Bank"),
+                type=acc_data.get("type", "depository"),
+                subtype=acc_data.get("subtype", "checking"),
+                mask="1234",
+                data_provider="demo_seed"
+            )
+            session.add(account)
+            session.commit()
+            session.refresh(account)
+            accounts_created += 1
+            
+            # Create Transactions
+            for t in acc_data.get("transactions", []):
+                cat_primary = "Uncategorized"
+                if t.get("category") and len(t["category"]) > 0:
+                    cat_primary = t["category"][0]
+                
+                desc = t.get("description", "")
+                # Heuristics
+                if "Uber" in desc: cat_primary = "Transportation"
+                if "Starbucks" in desc: cat_primary = "Food and Drink"
+                if "Netflix" in desc: cat_primary = "Service"
+                if "Gusto" in desc: cat_primary = "Income"
+                
+                new_tx = Transaction(
+                    account_id=account.id,
+                    provider_transaction_id=f"demo_{random.randint(100000, 999999)}_{total_tx}",
+                    amount=t.get("amount", 0.0),
+                    date=datetime.strptime(t["date"], "%Y-%m-%d"),
+                    name=desc,
+                    merchant_name=desc,
+                    category_primary=cat_primary,
+                    payment_channel="online",
+                    pending=False
+                )
+                session.add(new_tx)
+                total_tx += 1
+        
+        session.commit()
+        
+        # Trigger AI
+        print("DEBUG: Demo seed complete. Generating insights...")
+        generate_insights(session)
+        
+        return {
+            "status": "success", 
+            "message": f"Demo Ready! Created {accounts_created} accounts and {total_tx} transactions.",
+            "insights_triggered": True
+        }
+    except Exception as e:
+        print(f"Demo seed failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}

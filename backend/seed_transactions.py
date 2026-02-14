@@ -18,8 +18,19 @@ def seed_demo_transactions(session: Session):
     # Get the first account
     account = session.exec(select(Account)).first()
     if not account:
-        print("ERROR: No account found. Connect a bank account first.")
-        return {"error": "No account found. Connect a bank first."}
+        print("WARN: No account found. Creating Demo Account.")
+        account = Account(
+            provider_account_id="demo_random_01",
+            name="Demo Checking",
+            official_name="Demo Platinum Reporting",
+            type="depository",
+            mask="9999",
+            subtype="checking",
+            data_provider="demo_random"
+        )
+        session.add(account)
+        session.commit()
+        session.refresh(account)
     
     merchants = [
         ("Netflix", 15.99, "Entertainment"),
