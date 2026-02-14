@@ -1,0 +1,88 @@
+[
+  {
+    "scenario": "Subscription Audit & Deep Dive",
+    "expected_tools": [
+      "ledger_subscriptions_detect",
+      "ledger_transactions_search",
+      "ledger_transactions_search"
+    ],
+    "turns": [
+      "Show me my recurring subscriptions and monthly totals.",
+      "The Netflix subscription seems high. Can you show me the last 3 payments for it?",
+      "Compare these payments with my total entertainment spending for the last 3 months."
+    ]
+  },
+  {
+    "scenario": "Burn Rate & Anomaly Investigation",
+    "expected_tools": [
+      "ledger_spending_velocity",
+      "ledger_anomalies_detect",
+      "ledger_transactions_search"
+    ],
+    "turns": [
+      "What is my current spending velocity compared to usual?",
+      "Why is it trending higher? Are there any specific anomalies or spikes?",
+      "Show me the details of the largest expense from the last week."
+    ]
+  },
+  {
+    "scenario": "Categorization & Budgeting Advice",
+    "expected_tools": [
+      "ledger_transactions_search",
+      "ledger_transactions_search"
+    ],
+    "turns": [
+      "How much did I spend on 'Food and Drink' last month?",
+      "Break this down by specific merchants and show me the top 3.",
+      "Given this, what's one way I could reduce my food spending next month?"
+    ]
+  },
+  {
+    "scenario": "Full Financial Health Check",
+    "expected_tools": [
+      "ledger_financial_snapshot"
+    ],
+    "turns": [
+      "Give me a full picture of my financial health.",
+      "What's the biggest risk you see in my spending right now?",
+      "What would you recommend I do this month?"
+    ]
+  },
+  {
+    "scenario": "Forecast & Planning",
+    "expected_tools": [
+      "ledger_cashflow_forecast",
+      "ledger_transactions_search"
+    ],
+    "turns": [
+      "Will I run out of money before next month?",
+      "What are my biggest recurring expenses that I could cut?",
+      "If I cancel Spotify and reduce Uber rides, how much could I save over 60 days?"
+    ]
+  },
+  {
+    "scenario": "Edge Case: No Data & Recovery",
+    "expected_tools": [
+      "ledger_transactions_search",
+      "ledger_bank_sync"
+    ],
+    "turns": [
+      "Show me my spending at a restaurant called 'Le Château Bleu'.",
+      "Hmm, no results. Can you refresh my bank data?",
+      "Okay, now search again for any restaurant spending this week."
+    ]
+  },
+  {
+    "scenario": "Multi-Tool Chaining",
+    "expected_tools": [
+      "ledger_anomalies_detect",
+      "ledger_transactions_search",
+      "ledger_cashflow_forecast"
+    ],
+    "turns": [
+      "I noticed a weird charge. Can you check for anomalies?",
+      "Show me all transactions from the same merchant in the last 30 days.",
+      "Given these charges, how does my forecast look for the rest of the month?"
+    ]
+  }
+]
