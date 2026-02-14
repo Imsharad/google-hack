@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 import json
 from datetime import datetime
-from .database import create_db_and_tables
+from database import create_db_and_tables
 
 load_dotenv()
 
@@ -86,8 +86,8 @@ def create_link_token():
 
 from fastapi import Depends
 from sqlmodel import Session, select
-from .database import engine
-from .models import Account, Transaction
+from database import engine
+from models import Account, Transaction
 
 def get_session():
     with Session(engine) as session:
@@ -259,7 +259,7 @@ def sync_bank_data():
     return {"status": "success", "message": "Bank data synced", "transactions_synced": 42}
 
 # --- Insights Engine Endpoints ---
-from .insights_engine import (
+from insights_engine import (
     compute_financial_dna, 
     detect_anomalies, 
     detect_subscriptions, 
@@ -271,7 +271,7 @@ from .insights_engine import (
     compute_daily_trend
 )
 
-from .llm_narrator import (
+from llm_narrator import (
     narrate_insights, 
     InsightCard, 
     ActionButton, 
@@ -279,12 +279,12 @@ from .llm_narrator import (
     narrate_insights_v2,
     NarratedInsightsV2
 )
-from .models import AgentInsight
+from models import AgentInsight
 
 from fastapi import Depends, BackgroundTasks
 from sqlmodel import Session, select, delete
-from .database import engine
-from .models import Account, Transaction, AgentInsight
+from database import engine
+from models import Account, Transaction, AgentInsight
 
 # ... existing code ...
 
@@ -524,7 +524,7 @@ def seed_transactions_endpoint(session: Session = Depends(get_session)):
 @app.post("/seed/sparkov")
 def seed_sparkov_endpoint(session: Session = Depends(get_session)):
     """Load SOTA Sparkov data from CSV"""
-    from .seed_transactions import seed_from_csv
+    from seed_transactions import seed_from_csv
     
     # Path is relative to the backend execution context. 
     # Provided we run from root or backend, we need to find data/transactions.csv
@@ -645,7 +645,7 @@ def seed_demo_data(background_tasks: BackgroundTasks, session: Session = Depends
     One-click setup for the demo. 
     Generates fresh data server-side and seeds the DB.
     """
-    from .demo_data import generate_custom_user
+    from demo_data import generate_custom_user
     
     # Generate data
     user_data = generate_custom_user()

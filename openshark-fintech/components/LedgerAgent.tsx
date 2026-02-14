@@ -1,133 +1,181 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Send, Loader2, Sparkles, User } from 'lucide-react';
-import { chatWithLedger } from '../services/geminiService';
-import { Transaction } from '../types';
-
-interface LedgerAgentProps {
-    transactions: Transaction[];
-}
+import { Bot, Send, Loader2, User } from 'lucide-react';
+import { AgentConnection } from '../services/agentService';
+import MarkdownMessage from './MarkdownMessage';
 
 interface Message {
-    id: string;
-    role: 'user' | 'model';
-    text: string;
+  id: string;
+  role: 'user' | 'model';
+  text: string;
 }
 
-const LedgerAgent: React.FC<LedgerAgentProps> = ({ transactions }) => {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 'init',
-            role: 'model',
-            text: "Hi, I'm Ledger. I've analyzed your 90-day transaction history. I see a few areas we could optimize. What would you like to know?"
+const WS_URL = process.env.WS_URL || 'ws://localhost:8002';
+
+const LedgerAgent: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'init',
+      role: 'model',
+      text: "Hi, I'm Ledger. I'm connected to your real transaction data. Ask me anything — spending patterns, subscriptions, anomalies, or forecasts."
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [thought, setThought] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const agentRef = useRef<AgentConnection | null>(null);
+
+  useEffect(() => {
+    const agent = new AgentConnection(
+      WS_URL,
+      (data) => {
+        switch (data.type) {
+          case 'agent_event':
+            if (data.thought) setThought(data.thought);
+            break;
+          case 'final_response':
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              role: 'model',
+              text: data.text || "I couldn't generate a response."
+            }]);
+            setLoading(false);
+            setThought(null);
+            break;
+          case 'error':
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              role: 'model',
+              text: `Something went wrong — ${data.error}`
+            }]);
+            setLoading(false);
+            setThought(null);
+            break;
         }
-    ]);
-    const [input, setInput] = useState('');
-    const [loading, setLoading] = useState(false);
-    const scrollRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages]);
-
-    const handleSend = async () => {
-        if (!input.trim() || loading) return;
-
-        const userMsg: Message = { id: Date.now().toString(), role: 'user', text: input };
-        setMessages(prev => [...prev, userMsg]);
-        setInput('');
-        setLoading(true);
-
-        const responseText = await chatWithLedger(
-            messages.map(m => ({ role: m.role, text: m.text })),
-            input
-        );
-
-        setMessages(prev => [...prev, {
-            id: (Date.now() + 1).toString(),
-            role: 'model',
-            text: responseText || "I encountered an error processing that request."
-        }]);
-        setLoading(false);
-    };
-
-    return (
-        <div className="h-full flex flex-col bg-white rounded-2xl overflow-hidden border border-airbnb-line shadow-card">
-            {/* Header */}
-            <div className="p-6 border-b border-airbnb-line bg-white flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-airbnb-red flex items-center justify-center relative shadow-sm">
-                        <Bot className="text-white w-6 h-6" strokeWidth={2.5} />
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-airbnb-black">Ledger Assistant</h2>
-                        <p className="text-sm text-airbnb-gray">Always active • Financial Analyst</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50" ref={scrollRef}>
-                {messages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`flex max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                            {/* Avatar */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                                msg.role === 'user' ? 'bg-airbnb-black ml-3' : 'bg-airbnb-red mr-3'
-                            }`}>
-                                {msg.role === 'user' ? <User size={14} className="text-white"/> : <Bot size={14} className="text-white"/>}
-                            </div>
-                            
-                            {/* Bubble */}
-                            <div className={`px-5 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed ${
-                                msg.role === 'user' 
-                                    ? 'bg-white text-airbnb-black rounded-tr-sm border border-airbnb-line' 
-                                    : 'bg-white text-airbnb-black rounded-tl-sm border border-airbnb-line'
-                            }`}>
-                                <p className="whitespace-pre-wrap">{msg.text}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                {loading && (
-                    <div className="flex justify-start">
-                         <div className="flex max-w-[80%] flex-row">
-                             <div className="w-8 h-8 rounded-full bg-airbnb-red flex items-center justify-center shrink-0 mt-1 mr-3">
-                                 <Bot size={14} className="text-white"/>
-                             </div>
-                             <div className="px-5 py-3 rounded-2xl rounded-tl-sm bg-white border border-airbnb-line shadow-sm flex items-center space-x-2">
-                                <Loader2 className="animate-spin text-airbnb-gray w-4 h-4" />
-                                <span className="text-sm text-airbnb-gray">Thinking...</span>
-                            </div>
-                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Input Area */}
-            <div className="p-4 bg-white border-t border-airbnb-line">
-                <div className="relative flex items-center max-w-4xl mx-auto">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder="Message Ledger..."
-                        className="w-full bg-airbnb-light border border-airbnb-line rounded-full py-3.5 pl-6 pr-14 text-airbnb-black placeholder-airbnb-gray focus:outline-none focus:ring-2 focus:ring-airbnb-black focus:border-transparent transition-all shadow-inner"
-                    />
-                    <button 
-                        onClick={handleSend}
-                        disabled={loading || !input.trim()}
-                        className="absolute right-2 p-2 bg-airbnb-red text-white rounded-full hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                    >
-                        <Send size={18} fill="currentColor" />
-                    </button>
-                </div>
-            </div>
-        </div>
+      },
+      setConnected
     );
+
+    agent.connect();
+    agentRef.current = agent;
+
+    return () => agent.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, thought]);
+
+  const handleSend = () => {
+    if (!input.trim() || loading) return;
+
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', text: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setLoading(true);
+    setThought(null);
+
+    agentRef.current?.send(input);
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-white rounded-2xl overflow-hidden border border-airbnb-line shadow-card">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-airbnb-line bg-white flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-11 h-11 rounded-full bg-airbnb-red flex items-center justify-center relative shadow-sm">
+            <Bot className="text-white w-5 h-5" strokeWidth={2.5} />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white ${connected ? 'bg-emerald-500' : 'bg-stone-300'}`} />
+          </div>
+          <div>
+            <h2 className="text-[17px] font-bold text-airbnb-black tracking-tight">Ledger</h2>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-stone-300'}`} />
+              <p className="text-[13px] text-airbnb-gray">
+                {connected ? 'Online' : 'Offline'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-[#FAFAFA]" ref={scrollRef}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end gap-2.5`}>
+              {/* Avatar */}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                msg.role === 'user' ? 'bg-airbnb-black' : 'bg-airbnb-red'
+              }`}>
+                {msg.role === 'user'
+                  ? <User size={13} className="text-white" strokeWidth={2.5} />
+                  : <Bot size={13} className="text-white" strokeWidth={2.5} />
+                }
+              </div>
+
+              {/* Bubble */}
+              {msg.role === 'user' ? (
+                <div className="px-4 py-2.5 rounded-2xl rounded-br-md bg-airbnb-black text-white text-[15px] leading-[1.6]">
+                  <p>{msg.text}</p>
+                </div>
+              ) : (
+                <div className="px-5 py-3.5 rounded-2xl rounded-bl-md bg-white text-airbnb-black border border-stone-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <MarkdownMessage text={msg.text} />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Thinking indicator */}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="flex items-end gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-airbnb-red flex items-center justify-center shrink-0">
+                <Bot size={13} className="text-white" strokeWidth={2.5} />
+              </div>
+              <div className="px-5 py-3.5 rounded-2xl rounded-bl-md bg-white border border-stone-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center gap-3">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300 animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300 animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300 animate-bounce [animation-delay:300ms]" />
+                </div>
+                {thought && (
+                  <span className="text-[13px] text-airbnb-gray">{thought}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="px-5 py-4 bg-white border-t border-stone-100">
+        <div className="relative flex items-center max-w-4xl mx-auto">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder={connected ? "Ask Ledger anything..." : "Connecting..."}
+            disabled={!connected}
+            className="w-full bg-[#F5F5F5] border border-stone-200 rounded-2xl py-3 pl-5 pr-14 text-[15px] text-airbnb-black placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-airbnb-black/10 focus:border-stone-300 transition-all disabled:opacity-40"
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim() || !connected}
+            className="absolute right-1.5 w-9 h-9 flex items-center justify-center bg-airbnb-red text-white rounded-xl hover:bg-rose-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          >
+            <Send size={16} className="translate-x-[0.5px]" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default LedgerAgent;

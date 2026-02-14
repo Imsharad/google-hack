@@ -1,6 +1,6 @@
 import React from 'react';
 import { Transaction } from '../types';
-import { ShoppingBag, Coffee, Car, Zap, AlertTriangle, Repeat } from 'lucide-react';
+import { ShoppingBag, Coffee, Car, Zap, AlertTriangle, Repeat, Heart, Plane, Film, DollarSign } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -8,10 +8,14 @@ interface TransactionListProps {
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
-    case 'Shopping': return ShoppingBag;
     case 'Food & Dining': return Coffee;
+    case 'Shopping': return ShoppingBag;
     case 'Transportation': return Car;
     case 'Utilities': return Zap;
+    case 'Entertainment': return Film;
+    case 'Health': return Heart;
+    case 'Travel': return Plane;
+    case 'Income': return DollarSign;
     default: return ShoppingBag;
   }
 };
@@ -21,19 +25,24 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
     <div className="bg-white rounded-2xl border border-airbnb-line shadow-card overflow-hidden flex flex-col h-full">
       <div className="p-6 border-b border-airbnb-line flex justify-between items-center bg-white">
         <div>
-            <h3 className="text-airbnb-black text-lg font-semibold">Recent Activity</h3>
-            <p className="text-airbnb-gray text-xs mt-1">Updated just now</p>
+          <h3 className="text-airbnb-black text-lg font-semibold">Recent Activity</h3>
+          <p className="text-airbnb-gray text-xs mt-1">{transactions.length} transactions</p>
         </div>
         <span className="text-xs font-semibold text-airbnb-black bg-airbnb-light border border-airbnb-line px-3 py-1 rounded-full">Live</span>
       </div>
       <div className="overflow-y-auto flex-1">
+        {transactions.length === 0 && (
+          <div className="p-8 text-center text-airbnb-gray text-sm">
+            No transactions yet. Go to Settings to seed data.
+          </div>
+        )}
         {transactions.map((txn, index) => {
           const Icon = getCategoryIcon(txn.category);
           return (
             <div key={txn.id} className={`group flex items-center justify-between p-4 hover:bg-airbnb-hover transition-colors ${index !== transactions.length - 1 ? 'border-b border-airbnb-line' : ''}`}>
               <div className="flex items-center space-x-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${txn.isAnomaly ? 'bg-red-50 text-airbnb-red' : 'bg-airbnb-light text-airbnb-black'}`}>
-                   {txn.isAnomaly ? <AlertTriangle size={20} strokeWidth={2.5} /> : <Icon size={20} strokeWidth={2} />}
+                  {txn.isAnomaly ? <AlertTriangle size={20} strokeWidth={2.5} /> : <Icon size={20} strokeWidth={2} />}
                 </div>
                 <div>
                   <div className="flex items-center">

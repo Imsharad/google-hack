@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, create_engine
-from .models import Account, Transaction, AgentInsight # Import models to register them
+from models import Account, Transaction, AgentInsight # Import models to register them
 
 sqlite_file_name = "finance.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"

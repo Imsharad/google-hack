@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import statistics
 import math
 
-from .models import Transaction
+from models import Transaction
 
 def compute_financial_dna(transactions: List[Transaction]) -> Dict[str, Any]:
     """
