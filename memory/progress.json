@@ -1,0 +1,194 @@
+{
+    "project_name": "Google Hack - Fintech Agent",
+    "last_updated": "2026-02-14T00:00:00+05:30",
+    "status": "Full Stack Operational - Upgraded to Gemini 2.0 Flash",
+    "version": "1.3.2",
+    "architecture": {
+        "backend": {
+            "framework": "FastAPI",
+            "database": "SQLite (SQLModel)",
+            "port": 8001,
+            "endpoints": [
+                "/",
+                "/ingest",
+                "/create_link_token",
+                "/exchange_public_token",
+                "/insights",
+                "/spending-velocity"
+            ]
+        },
+        "frontend": {
+            "framework": "React Native (Expo)",
+            "connection_type": "Direct IP (LAN) / Localhost (Web)",
+            "port": 8081,
+            "modules": [
+                "react-native-plaid-link-sdk",
+                "react-plaid-link (Web Support)",
+                "react-native-svg",
+                "expo-router"
+            ]
+        },
+        "agent": {
+            "name": "Ledger",
+            "framework": "Pi Agent Core (Node.js/TypeScript)",
+            "persona": "Financial Forensic Analyst",
+            "runtime": "tsx",
+            "port": 8002,
+            "skills": [
+                "analyze-spending"
+            ],
+            "tools": [
+                "ledger_transactions_search",
+                "ledger_subscriptions_detect",
+                "ledger_anomalies_detect",
+                "ledger_cashflow_forecast",
+                "ledger_spending_velocity",
+                "ledger_bank_sync",
+                "ledger_financial_snapshot"
+            ]
+        },
+        "infrastructure": {
+            "cloud": "Google Cloud Platform",
+            "project_id": "second-brain-463904",
+            "region": "us-central1",
+            "enabled_apis": [
+                "aiplatform.googleapis.com",
+                "cloudresourcemanager.googleapis.com"
+            ]
+        }
+    },
+    "completed_milestones": [
+        {
+            "id": "infra_setup",
+            "description": "Google Cloud project configured and gcloud CLI installed.",
+            "status": "completed"
+        },
+        {
+            "id": "backend_scaffold",
+            "description": "FastAPI backend created with SQLModel database schemas.",
+            "status": "completed"
+        },
+        {
+            "id": "frontend_bridge",
+            "description": "Expo app initialized and successfully connected to local backend.",
+            "status": "completed"
+        },
+        {
+            "id": "agent_core_setup",
+            "description": "Agent persona (SOUL) and initial tools defined.",
+            "status": "completed"
+        },
+        {
+            "id": "secrets_config",
+            "description": "Environment variables template created (.env.example).",
+            "status": "completed"
+        },
+        {
+            "id": "automation",
+            "description": "One-click run script (run.sh) implemented.",
+            "status": "completed"
+        },
+        {
+            "id": "plaid_integration",
+            "description": "Plaid Link implemented on Backend (FastAPI) and Frontend (Native + Web). Web Demo is ready.",
+            "status": "completed"
+        },
+        {
+            "id": "real_data_sync",
+            "description": "End-to-End Transaction Sync implemented. App fetches, stores in SQLite, and displays Plaid Sandbox data.",
+            "status": "completed"
+        },
+        {
+            "id": "insight_engine_v1",
+            "description": "Python Insights Engine computes DNA, Anomalies, and Subs. Results stored in DB.",
+            "status": "completed"
+        },
+        {
+            "id": "gen_ui_narration",
+            "description": "Gemini-powered LLM Narrator generates UI schema cards based on raw data.",
+            "status": "completed"
+        },
+        {
+            "id": "pi_agent_node",
+            "description": "TypeScript Agent server implemented using pi-agent-core with tool calling capability.",
+            "status": "completed"
+        },
+        {
+            "id": "full_stack_launch",
+            "description": "Single-entry startup (test_apis.sh) and tabbed navigation fixed for Demo.",
+            "status": "completed"
+        },
+        {
+            "id": "ledger_chat_debug",
+            "description": "Ledger chat fully debugged and operational. Fixed API key quota issues, pi-agent-core error handling, and model configuration. Chat now responds correctly with tool calling.",
+            "status": "completed"
+        },
+        {
+            "id": "pi_agent_fix_narrator",
+            "description": "Fixed 'stage fright' issue. Updated LLM Narrator to use 'gemini-2.0-flash-001' (replacing deprecated 1.5-flash), improved JSON schema robustness, and cleared 'poisoned' fallback data from DB.",
+            "status": "completed"
+        },
+        {
+            "id": "gemini_2_upgrade",
+            "description": "Standardized all AI components (Agent + Backend) on 'gemini-2.0-flash-001' (stable) after verifying availability.",
+            "status": "completed"
+        },
+        {
+            "id": "fix_tool_skip_bug",
+            "description": "Fixed Ledger skipping tool calls and telling user to sync bank. Removed escape-hatch fallback from system prompt, added CRITICAL TOOL-USE RULES forcing model to always call query_transactions before responding.",
+            "status": "completed"
+        },
+        {
+            "id": "agent_refactor_granular_tools",
+            "description": "Refactored agent from monolithic `get_insights` to granular tools (`get_subscriptions`, `get_anomalies`, `get_forecast`, filtered `query_transactions`). Added corresponding backend endpoints and updated system prompt with tool routing table.",
+            "status": "completed"
+        }
+    ],
+    "configuration": {
+        "env_file": ".env",
+        "database_file": "finance.db",
+        "agent_dir": "agent-node/",
+        "backend_dir": "backend/",
+        "frontend_dir": "my-fintech-app/"
+    },
+    "plaid_sandbox": {
+        "credentials": {
+            "standard": "user_good / pass_good",
+            "high_volume": "user_transactions_dynamic / pass_good",
+            "username": "user_good",
+            "password": "pass_good",
+            "pin": "1234"
+        },
+        "mfa_bypass": {
+            "phone_number": "415-555-0011",
+            "code": "1234"
+        },
+        "flow_steps": [
+            "1. Click 'Connect Bank Account'",
+            "2. Enter Phone Number (415-555-0011)",
+            "3. Enter Code (1234)",
+            "4. Select Institution (Chase/Bank of America)",
+            "5. Login with user_good / pass_good",
+            "6. Success! Transactions sync immediately.",
+            "7. Insights Tab triggers AI card generation.",
+            "8. Chat Tab enables voice/text analysis of data."
+        ]
+    },
+    "next_steps": [
+        {
+            "priority": "high",
+            "action": "Verify End-to-End Flow",
+            "context": "Test the full loop: App -> Plaid -> Backend -> Agent (Insights + Chat)."
+        },
+        {
+            "priority": "medium",
+            "action": "Visual Polish of Cards",
+            "context": "Improve CSS/Styling in React Native for better premium feel."
+        },
+        {
+            "priority": "low",
+            "action": "Wait for/Debug iOS Simulator",
+            "context": "Download is slow. Use Web Demo for now."
+        }
+    ]
+}
